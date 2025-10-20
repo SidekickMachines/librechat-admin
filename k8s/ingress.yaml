@@ -1,0 +1,43 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: librechat-admin-ingress
+  namespace: librechat
+  annotations:
+    # Use existing cert-manager certificate
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+
+    # Nginx ingress configuration
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+
+    # Increase timeouts for admin operations
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+
+    # Body size for large operations
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+
+    # Increase buffer sizes for large OAuth cookies (learned from mongo-admin!)
+    nginx.ingress.kubernetes.io/proxy-buffer-size: "16k"
+    nginx.ingress.kubernetes.io/proxy-buffers-number: "8"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - chat.sidekickmachines.com
+      secretName: chat-sidekickmachines-com-tls
+  rules:
+    - host: chat.sidekickmachines.com
+      http:
+        paths:
+          # OAuth2-Proxy handles authentication and proxies to Admin UI
+          # Preserve full path including /admin
+          - path: /admin
+            pathType: Prefix
+            backend:
+              service:
+                name: oauth2-proxy-admin
+                port:
+                  number: 4180
