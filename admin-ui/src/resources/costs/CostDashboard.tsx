@@ -37,13 +37,11 @@ const StatCard = ({
   value,
   subtitle,
   icon,
-  color,
 }: {
   title: string;
   value: string | number;
   subtitle: string;
   icon: React.ReactNode;
-  color: string;
 }) => {
   return (
     <Card
@@ -151,28 +149,24 @@ export const CostDashboard = () => {
           value={formatNumber(costStats.overall.totalTokens)}
           subtitle="Tokens used this month"
           icon={<TokenIcon sx={{ fontSize: 32 }} />}
-          color="#667eea"
         />
         <StatCard
           title="Estimated Cost"
           value={`$${costStats.overall.estimatedCost}`}
           subtitle="Approximate monthly cost"
           icon={<AttachMoneyIcon sx={{ fontSize: 32 }} />}
-          color="#f093fb"
         />
         <StatCard
           title="Transactions"
           value={formatNumber(costStats.overall.transactionCount)}
           subtitle="Total API calls"
           icon={<TrendingUpIcon sx={{ fontSize: 32 }} />}
-          color="#4facfe"
         />
         <StatCard
           title="Active Users"
           value={costStats.topConsumers.length}
           subtitle="Users with usage"
           icon={<PeopleIcon sx={{ fontSize: 32 }} />}
-          color="#43e97b"
         />
       </Box>
 
