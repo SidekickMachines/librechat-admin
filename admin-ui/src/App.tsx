@@ -1,8 +1,10 @@
-import { Admin, Resource } from 'react-admin';
+import { Admin, Resource, CustomRoutes } from 'react-admin';
+import { Route } from 'react-router-dom';
 import { dataProvider } from './dataProvider';
 import { authProvider } from './authProvider';
 import { CustomLayout } from './components/CustomLayout';
 import { Dashboard } from './resources/dashboard/Dashboard';
+import { CostDashboard } from './resources/costs/CostDashboard';
 import { UserList } from './resources/users/UserList';
 import { UserEdit } from './resources/users/UserEdit';
 import { UserCreate } from './resources/users/UserCreate';
@@ -117,6 +119,9 @@ function App() {
         icon={FolderIcon}
         options={{ label: 'Projects' }}
       />
+      <CustomRoutes>
+        <Route path="/costs" element={<CostDashboard />} />
+      </CustomRoutes>
     </Admin>
   );
 }

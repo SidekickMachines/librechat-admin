@@ -1070,6 +1070,99 @@ app.get('/api/system-status', async (req, res) => {
   }
 });
 
+// GET /api/cost-stats - Get cost statistics for current month
+app.get('/api/cost-stats', async (req, res) => {
+  try {
+    // Get start and end of current month
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+    // Aggregate transactions for current month
+    const monthlyTransactions = await db.collection('transactions').aggregate([
+      {
+        $match: {
+          createdAt: {
+            $gte: startOfMonth,
+            $lte: endOfMonth
+          }
+        }
+      },
+      {
+        $group: {
+          _id: '$user',
+          totalTokens: { $sum: { $abs: '$rawAmount' } },
+          totalValue: { $sum: { $abs: '$tokenValue' } },
+          transactionCount: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { totalTokens: -1 }
+      },
+      {
+        $limit: 10
+      }
+    ]).toArray();
+
+    // Get user details for top consumers
+    const topConsumers = await Promise.all(
+      monthlyTransactions.map(async (stat) => {
+        const user = await db.collection('users').findOne({ _id: stat._id });
+        return {
+          userId: stat._id?.toString() || 'unknown',
+          username: user?.username || user?.email || 'Unknown User',
+          email: user?.email || 'N/A',
+          totalTokens: stat.totalTokens,
+          totalValue: stat.totalValue,
+          transactionCount: stat.transactionCount,
+          estimatedCost: (stat.totalTokens / 1000 * 0.03).toFixed(4) // Rough estimate: $0.03 per 1K tokens
+        };
+      })
+    );
+
+    // Calculate overall monthly statistics
+    const overallStats = await db.collection('transactions').aggregate([
+      {
+        $match: {
+          createdAt: {
+            $gte: startOfMonth,
+            $lte: endOfMonth
+          }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalTokens: { $sum: { $abs: '$rawAmount' } },
+          totalValue: { $sum: { $abs: '$tokenValue' } },
+          transactionCount: { $sum: 1 }
+        }
+      }
+    ]).toArray();
+
+    const monthStats = overallStats[0] || { totalTokens: 0, totalValue: 0, transactionCount: 0 };
+
+    res.json({
+      period: {
+        start: startOfMonth,
+        end: endOfMonth,
+        month: now.toLocaleString('en-US', { month: 'long', year: 'numeric' })
+      },
+      overall: {
+        totalTokens: monthStats.totalTokens,
+        totalValue: monthStats.totalValue,
+        transactionCount: monthStats.transactionCount,
+        estimatedCost: (monthStats.totalTokens / 1000 * 0.03).toFixed(2) // Rough estimate
+      },
+      topConsumers: topConsumers,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error fetching cost stats:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // GET /api/pods - List all pods across specified namespaces
 app.get('/api/pods', async (req, res) => {
   try {
