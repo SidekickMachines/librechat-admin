@@ -1,6 +1,7 @@
 import { Admin, Resource } from 'react-admin';
 import { dataProvider } from './dataProvider';
 import { authProvider } from './authProvider';
+import { CustomLayout } from './components/CustomLayout';
 import { Dashboard } from './resources/dashboard/Dashboard';
 import { UserList } from './resources/users/UserList';
 import { UserEdit } from './resources/users/UserEdit';
@@ -39,6 +40,7 @@ function App() {
       dataProvider={dataProvider}
       authProvider={authProvider}
       dashboard={Dashboard}
+      layout={CustomLayout}
       title="LibreChat Admin"
     >
       <Resource
