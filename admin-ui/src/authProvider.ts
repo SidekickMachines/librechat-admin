@@ -1,4 +1,4 @@
-import { AuthProvider } from 'react-admin';
+import type { AuthProvider } from 'react-admin';
 
 /**
  * Auth provider for OAuth2-Proxy authentication

@@ -1,4 +1,5 @@
-import { DataProvider, fetchUtils } from 'react-admin';
+import type { DataProvider } from 'react-admin';
+import { fetchUtils } from 'react-admin';
 
 const apiUrl = '/api';
 
@@ -13,8 +14,8 @@ const httpClient = (url: string, options: any = {}) => {
 
 export const dataProvider: DataProvider = {
   getList: async (resource, params) => {
-    const { page, perPage } = params.pagination;
-    const { field, order } = params.sort;
+    const { page = 1, perPage = 25 } = params.pagination || {};
+    const { order = 'DESC' } = params.sort || {};
     const query = {
       ...params.filter,
       limit: perPage,
@@ -47,8 +48,8 @@ export const dataProvider: DataProvider = {
   },
 
   getManyReference: async (resource, params) => {
-    const { page, perPage } = params.pagination;
-    const { field, order } = params.sort;
+    const { page = 1, perPage = 25 } = params.pagination || {};
+    const { order = 'DESC' } = params.sort || {};
     const query = {
       ...params.filter,
       [params.target]: params.id,
