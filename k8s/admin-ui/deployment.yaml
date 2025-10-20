@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: admin-ui
-          image: ghcr.io/devopsascent/librechat-admin:latest
+          image: ghcr.io/sidekickmachines/librechat-admin:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 80
