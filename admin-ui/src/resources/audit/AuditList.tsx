@@ -3,7 +3,6 @@ import {
   Datagrid,
   TextField,
   DateField,
-  ChipField,
   FunctionField,
   FilterButton,
   TopToolbar,
