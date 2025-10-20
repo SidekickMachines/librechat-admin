@@ -71,7 +71,7 @@ export const dataProvider: DataProvider = {
       method: 'POST',
       body: JSON.stringify(params.data),
     });
-    return { data: { ...params.data, id: json.id } };
+    return { data: { ...params.data, id: json.id || json._id || json } as any };
   },
 
   update: async (resource, params) => {
@@ -88,9 +88,9 @@ export const dataProvider: DataProvider = {
       httpClient(`${apiUrl}/${resource}/${id}`, {
         method: 'PUT',
         body: JSON.stringify(params.data),
-      }).then(({ json }) => json)
+      })
     );
-    const data = await Promise.all(promises);
+    await Promise.all(promises);
     return { data: params.ids };
   },
 
@@ -99,7 +99,7 @@ export const dataProvider: DataProvider = {
     await httpClient(url, {
       method: 'DELETE',
     });
-    return { data: params.previousData };
+    return { data: params.previousData as any };
   },
 
   deleteMany: async (resource, params) => {
