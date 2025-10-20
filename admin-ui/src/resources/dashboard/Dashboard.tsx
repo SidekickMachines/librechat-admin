@@ -19,8 +19,8 @@ export const Dashboard = () => {
   useEffect(() => {
     // Fetch statistics from the API
     Promise.all([
-      fetch('/api/users?limit=1').then((r) => r.json()),
-      fetch('/api/convos?limit=1').then((r) => r.json()),
+      fetch('/admin/api/users?limit=1').then((r) => r.json()),
+      fetch('/admin/api/convos?limit=1').then((r) => r.json()),
     ])
       .then(([usersData, convosData]) => {
         setStats({
