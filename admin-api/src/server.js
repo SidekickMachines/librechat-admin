@@ -91,6 +91,35 @@ app.get('/api/users/:id', async (req, res) => {
   }
 });
 
+// POST /api/users - Create new user
+app.post('/api/users', async (req, res) => {
+  try {
+    const { id: _, _id: __, ...userData } = req.body;
+
+    // Add timestamps
+    const newUser = {
+      ...userData,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      emailVerified: userData.emailVerified || false,
+      role: userData.role || 'USER',
+    };
+
+    const result = await db.collection('users').insertOne(newUser);
+
+    const createdUser = {
+      id: result.insertedId.toString(),
+      _id: result.insertedId.toString(),
+      ...newUser,
+    };
+
+    res.status(201).json(createdUser);
+  } catch (error) {
+    console.error('Error creating user:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // PUT /api/users/:id - Update user
 app.put('/api/users/:id', async (req, res) => {
   try {
