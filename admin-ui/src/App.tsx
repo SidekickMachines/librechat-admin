@@ -13,6 +13,7 @@ import { PodList } from './resources/pods/PodList';
 import { PodShow } from './resources/pods/PodShow';
 import { MessageList } from './resources/messages/MessageList';
 import { AgentList } from './resources/agents/AgentList';
+import { AgentShow } from './resources/agents/AgentShow';
 import { FileList } from './resources/files/FileList';
 import { SessionList } from './resources/sessions/SessionList';
 import { TokenList } from './resources/tokens/TokenList';
@@ -76,6 +77,7 @@ function App() {
       <Resource
         name="agents"
         list={AgentList}
+        show={AgentShow}
         icon={SmartToyIcon}
         options={{ label: 'Agents' }}
       />

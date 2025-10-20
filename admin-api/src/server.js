@@ -509,6 +509,20 @@ app.get('/api/messages/:id', async (req, res) => {
   }
 });
 
+// DELETE /api/messages/:id - Delete message
+app.delete('/api/messages/:id', async (req, res) => {
+  try {
+    const result = await db.collection('messages').deleteOne({ _id: new ObjectId(req.params.id) });
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: 'Message not found' });
+    }
+    res.json({ id: req.params.id });
+  } catch (error) {
+    console.error('Error deleting message:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ==================== AGENTS ENDPOINTS ====================
 
 // GET /api/agents - List all agents with pagination
@@ -554,6 +568,20 @@ app.get('/api/agents/:id', async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching agent:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /api/agents/:id - Delete agent
+app.delete('/api/agents/:id', async (req, res) => {
+  try {
+    const result = await db.collection('agents').deleteOne({ _id: new ObjectId(req.params.id) });
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: 'Agent not found' });
+    }
+    res.json({ id: req.params.id });
+  } catch (error) {
+    console.error('Error deleting agent:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -607,6 +635,20 @@ app.get('/api/files/:id', async (req, res) => {
   }
 });
 
+// DELETE /api/files/:id - Delete file
+app.delete('/api/files/:id', async (req, res) => {
+  try {
+    const result = await db.collection('files').deleteOne({ _id: new ObjectId(req.params.id) });
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+    res.json({ id: req.params.id });
+  } catch (error) {
+    console.error('Error deleting file:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ==================== SESSIONS ENDPOINTS ====================
 
 // GET /api/sessions - List all sessions with pagination
@@ -652,6 +694,20 @@ app.get('/api/sessions/:id', async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching session:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /api/sessions/:id - Delete session
+app.delete('/api/sessions/:id', async (req, res) => {
+  try {
+    const result = await db.collection('sessions').deleteOne({ _id: new ObjectId(req.params.id) });
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+    res.json({ id: req.params.id });
+  } catch (error) {
+    console.error('Error deleting session:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -705,6 +761,20 @@ app.get('/api/tokens/:id', async (req, res) => {
   }
 });
 
+// DELETE /api/tokens/:id - Delete token
+app.delete('/api/tokens/:id', async (req, res) => {
+  try {
+    const result = await db.collection('tokens').deleteOne({ _id: new ObjectId(req.params.id) });
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: 'Token not found' });
+    }
+    res.json({ id: req.params.id });
+  } catch (error) {
+    console.error('Error deleting token:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ==================== TRANSACTIONS ENDPOINTS ====================
 
 // GET /api/transactions - List all transactions with pagination
@@ -754,6 +824,20 @@ app.get('/api/transactions/:id', async (req, res) => {
   }
 });
 
+// DELETE /api/transactions/:id - Delete transaction
+app.delete('/api/transactions/:id', async (req, res) => {
+  try {
+    const result = await db.collection('transactions').deleteOne({ _id: new ObjectId(req.params.id) });
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: 'Transaction not found' });
+    }
+    res.json({ id: req.params.id });
+  } catch (error) {
+    console.error('Error deleting transaction:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ==================== PROJECTS ENDPOINTS ====================
 
 // GET /api/projects - List all projects with pagination
@@ -799,6 +883,20 @@ app.get('/api/projects/:id', async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching project:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /api/projects/:id - Delete project
+app.delete('/api/projects/:id', async (req, res) => {
+  try {
+    const result = await db.collection('projects').deleteOne({ _id: new ObjectId(req.params.id) });
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+    res.json({ id: req.params.id });
+  } catch (error) {
+    console.error('Error deleting project:', error);
     res.status(500).json({ error: error.message });
   }
 });
