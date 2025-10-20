@@ -176,7 +176,7 @@ class KubernetesService {
     const restarts = containerStatuses.reduce((sum, c) => sum + (c.restartCount || 0), 0);
 
     return {
-      id: `${pod.metadata.namespace}-${pod.metadata.name}`,
+      id: `${pod.metadata.namespace}::${pod.metadata.name}`,
       name: pod.metadata.name,
       namespace: pod.metadata.namespace,
       status: status,

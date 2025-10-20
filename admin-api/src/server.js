@@ -486,12 +486,16 @@ app.get('/api/pods', async (req, res) => {
 // GET /api/pods/:id - Get single pod details
 app.get('/api/pods/:id', async (req, res) => {
   try {
-    // ID format: namespace-podname
-    const [namespace, ...podNameParts] = req.params.id.split('-');
-    const podName = podNameParts.join('-');
+    // ID format: namespace::podname
+    const parts = req.params.id.split('::');
+    if (parts.length !== 2) {
+      return res.status(400).json({ error: 'Invalid pod ID format. Expected: namespace::podname' });
+    }
+
+    const [namespace, podName] = parts;
 
     if (!namespace || !podName) {
-      return res.status(400).json({ error: 'Invalid pod ID format. Expected: namespace-podname' });
+      return res.status(400).json({ error: 'Invalid pod ID format. Expected: namespace::podname' });
     }
 
     const pod = await k8sService.getPod(namespace, podName);
