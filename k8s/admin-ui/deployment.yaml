@@ -15,6 +15,8 @@ spec:
       labels:
         app: librechat-admin-ui
     spec:
+      imagePullSecrets:
+      - name: regcred
       containers:
         - name: admin-ui
           image: ghcr.io/sidekickmachines/librechat-admin:latest
