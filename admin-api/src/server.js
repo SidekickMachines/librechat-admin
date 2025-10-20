@@ -556,13 +556,14 @@ app.get('/api/agents', async (req, res) => {
 // GET /api/agents/:id - Get single agent
 app.get('/api/agents/:id', async (req, res) => {
   try {
-    const agent = await db.collection('agents').findOne({ _id: new ObjectId(req.params.id) });
+    // Agents use a custom 'id' field, not MongoDB _id
+    const agent = await db.collection('agents').findOne({ id: req.params.id });
     if (!agent) {
       return res.status(404).json({ error: 'Agent not found' });
     }
 
     res.json({
-      id: agent._id.toString(),
+      id: agent.id,
       _id: agent._id.toString(),
       ...agent,
     });
@@ -575,7 +576,8 @@ app.get('/api/agents/:id', async (req, res) => {
 // DELETE /api/agents/:id - Delete agent
 app.delete('/api/agents/:id', async (req, res) => {
   try {
-    const result = await db.collection('agents').deleteOne({ _id: new ObjectId(req.params.id) });
+    // Agents use a custom 'id' field, not MongoDB _id
+    const result = await db.collection('agents').deleteOne({ id: req.params.id });
     if (result.deletedCount === 0) {
       return res.status(404).json({ error: 'Agent not found' });
     }
