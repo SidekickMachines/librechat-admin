@@ -83,11 +83,11 @@ const LogViewer = () => {
   return (
     <Card sx={{ mt: 2 }}>
       <CardContent>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h6" sx={{ fontWeight: 600, color: '#2d3748' }}>
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, color: '#2d3748', mb: 2 }}>
             Container Logs
           </Typography>
-          <Box sx={{ display: 'flex', gap: 2 }}>
+          <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
             {record.containers?.length > 1 && (
               <FormControl size="small" sx={{ minWidth: 150 }}>
                 <InputLabel>Container</InputLabel>
@@ -122,6 +122,7 @@ const LogViewer = () => {
               startIcon={<RefreshIcon />}
               onClick={fetchLogs}
               disabled={loading}
+              sx={{ minWidth: 110 }}
             >
               Refresh
             </Button>
@@ -129,6 +130,7 @@ const LogViewer = () => {
               variant="outlined"
               startIcon={<DownloadIcon />}
               onClick={downloadLogs}
+              sx={{ minWidth: 120 }}
             >
               Download
             </Button>
@@ -141,7 +143,7 @@ const LogViewer = () => {
             color: '#d4d4d4',
             fontFamily: 'Consolas, Monaco, monospace',
             fontSize: '0.875rem',
-            maxHeight: '600px',
+            height: '600px',
             overflow: 'auto',
             '&::-webkit-scrollbar': {
               width: '8px',
