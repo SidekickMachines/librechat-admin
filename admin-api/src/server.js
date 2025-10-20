@@ -991,6 +991,85 @@ app.delete('/api/projects/:id', async (req, res) => {
 
 // ==================== POD MONITORING ENDPOINTS ====================
 
+// GET /api/system-status - Get comprehensive system status
+app.get('/api/system-status', async (req, res) => {
+  try {
+    // Get all pods from relevant namespaces
+    const allPods = await k8sService.listPods(['librechat', 'snow-mcp', 'default']);
+
+    // Filter pods by service
+    const librechatPods = allPods.filter(p =>
+      p.namespace === 'librechat' && p.name.includes('librechat')
+    );
+    const mongoPods = allPods.filter(p =>
+      (p.namespace === 'librechat' && p.name.includes('mongo')) ||
+      (p.labels && p.labels.app === 'mongodb')
+    );
+    const mcpPods = allPods.filter(p =>
+      p.namespace === 'snow-mcp' || (p.labels && p.labels.app && p.labels.app.includes('mcp'))
+    );
+
+    // Determine service status
+    const getServiceStatus = (pods) => {
+      if (!pods || pods.length === 0) return { status: 'down', reason: 'No pods found' };
+      const runningPods = pods.filter(p => p.status === 'Running');
+      if (runningPods.length === 0) return { status: 'down', reason: 'No running pods' };
+      if (runningPods.length < pods.length) return { status: 'degraded', reason: 'Some pods not running' };
+      return { status: 'healthy', reason: 'All pods running' };
+    };
+
+    // Check MongoDB connectivity
+    let mongoStatus = getServiceStatus(mongoPods);
+    try {
+      if (db) {
+        await db.admin().ping();
+        mongoStatus = { status: 'healthy', reason: 'Connected and responsive' };
+      }
+    } catch (err) {
+      mongoStatus = { status: 'down', reason: `Connection error: ${err.message}` };
+    }
+
+    const systemStatus = {
+      librechat: {
+        ...getServiceStatus(librechatPods),
+        pods: librechatPods.map(p => ({
+          name: p.name,
+          namespace: p.namespace,
+          status: p.status,
+          ready: p.ready,
+          restarts: p.restarts,
+        })),
+      },
+      mongodb: {
+        ...mongoStatus,
+        pods: mongoPods.map(p => ({
+          name: p.name,
+          namespace: p.namespace,
+          status: p.status,
+          ready: p.ready,
+          restarts: p.restarts,
+        })),
+      },
+      mcp: {
+        ...getServiceStatus(mcpPods),
+        pods: mcpPods.map(p => ({
+          name: p.name,
+          namespace: p.namespace,
+          status: p.status,
+          ready: p.ready,
+          restarts: p.restarts,
+        })),
+      },
+      timestamp: new Date().toISOString(),
+    };
+
+    res.json(systemStatus);
+  } catch (error) {
+    console.error('Error fetching system status:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // GET /api/pods - List all pods across specified namespaces
 app.get('/api/pods', async (req, res) => {
   try {
