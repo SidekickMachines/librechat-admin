@@ -5,7 +5,6 @@ import {
   TextField,
   FunctionField,
   useRecordContext,
-  useDataProvider,
 } from 'react-admin';
 import {
   Box,
@@ -26,14 +25,14 @@ import DownloadIcon from '@mui/icons-material/Download';
 
 const LogViewer = () => {
   const record = useRecordContext();
-  const dataProvider = useDataProvider();
   const [logs, setLogs] = useState('');
   const [loading, setLoading] = useState(false);
   const [tailLines, setTailLines] = useState(100);
   const [selectedContainer, setSelectedContainer] = useState('');
 
   useEffect(() => {
-    if (record?.containers?.length > 0 && !selectedContainer) {
+    if (!record) return;
+    if (record.containers?.length > 0 && !selectedContainer) {
       setSelectedContainer(record.containers[0].name);
     }
   }, [record, selectedContainer]);
@@ -70,6 +69,7 @@ const LogViewer = () => {
   }, [record, tailLines, selectedContainer]);
 
   const downloadLogs = () => {
+    if (!record) return;
     const blob = new Blob([logs], { type: 'text/plain' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
