@@ -63,9 +63,6 @@ const LogViewer = () => {
 
   useEffect(() => {
     fetchLogs();
-    // Auto-refresh every 5 seconds
-    const interval = setInterval(fetchLogs, 5000);
-    return () => clearInterval(interval);
   }, [record, tailLines, selectedContainer]);
 
   const downloadLogs = () => {
