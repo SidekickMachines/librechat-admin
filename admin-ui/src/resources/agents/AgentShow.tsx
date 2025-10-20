@@ -4,9 +4,6 @@ import {
   TextField,
   DateField,
   BooleanField,
-  ArrayField,
-  Datagrid,
-  ChipField,
   FunctionField,
 } from 'react-admin';
 import { Box, Card, CardContent, Typography, Chip } from '@mui/material';
