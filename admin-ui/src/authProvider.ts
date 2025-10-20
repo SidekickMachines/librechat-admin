@@ -36,7 +36,7 @@ export const authProvider: AuthProvider = {
   // Get user identity from OAuth2-Proxy headers (passed through by API)
   getIdentity: async () => {
     try {
-      const response = await fetch('/api/user');
+      const response = await fetch('/admin/api/user');
       const user = await response.json();
       return {
         id: user.id || user._id,
@@ -54,7 +54,7 @@ export const authProvider: AuthProvider = {
   // Get user permissions - check if admin
   getPermissions: async () => {
     try {
-      const response = await fetch('/api/user');
+      const response = await fetch('/admin/api/user');
       const user = await response.json();
       return user.role === 'ADMIN' ? 'admin' : 'user';
     } catch (error) {

@@ -1,7 +1,8 @@
 import type { DataProvider } from 'react-admin';
 import { fetchUtils } from 'react-admin';
 
-const apiUrl = '/api';
+// API calls must go through the /admin path since that's where OAuth2-Proxy is configured
+const apiUrl = '/admin/api';
 
 const httpClient = (url: string, options: any = {}) => {
   if (!options.headers) {
