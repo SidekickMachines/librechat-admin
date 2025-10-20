@@ -59,10 +59,23 @@ jobs:
 
       - name: Deploy to Kubernetes
         env:
-          KUBECONFIG_DATA: ${{ secrets.KUBECONFIG }}
+          KUBECONFIG_DATA: ${{ secrets.K3S_KUBE_CONFIG }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
         run: |
           echo "$KUBECONFIG_DATA" | base64 -d > kubeconfig
           export KUBECONFIG=./kubeconfig
+
+          # Generate cookie secret for OAuth2-Proxy
+          COOKIE_SECRET=$(openssl rand -hex 16)
+
+          # Create or update OAuth2-Proxy secret
+          kubectl create secret generic oauth2-proxy-admin \
+            -n librechat \
+            --from-literal=OAUTH2_PROXY_CLIENT_ID="$AZURE_CLIENT_ID" \
+            --from-literal=OAUTH2_PROXY_CLIENT_SECRET="$AZURE_CLIENT_SECRET" \
+            --from-literal=OAUTH2_PROXY_COOKIE_SECRET="$COOKIE_SECRET" \
+            --dry-run=client -o yaml | kubectl apply -f -
 
           # Apply Kubernetes manifests
           kubectl apply -f k8s/admin-ui/deployment.yaml
@@ -71,12 +84,16 @@ jobs:
           kubectl apply -f k8s/oauth2-proxy/deployment.yaml
           kubectl apply -f k8s/ingress.yaml
 
-          # Restart deployment to pull latest image
+          # Restart deployments to pull latest image and secrets
           kubectl rollout restart deployment/librechat-admin-ui -n librechat
+          kubectl rollout restart deployment/oauth2-proxy-admin -n librechat
+
           kubectl rollout status deployment/librechat-admin-ui -n librechat --timeout=5m
+          kubectl rollout status deployment/oauth2-proxy-admin -n librechat --timeout=5m
 
           # Check deployment status
           kubectl get pods -n librechat -l app=librechat-admin-ui
+          kubectl get pods -n librechat -l app=oauth2-proxy-admin
 
           rm -f kubeconfig
 
