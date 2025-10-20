@@ -12,7 +12,7 @@ import ReceiptIcon from '@mui/icons-material/Receipt';
 
 export const TransactionList = () => (
   <List perPage={25} sort={{ field: 'createdAt', order: 'DESC' }}>
-    <Datagrid bulkActionButtons={false}>
+    <Datagrid>
       <FunctionField
         label="Transaction"
         render={(record: any) => (

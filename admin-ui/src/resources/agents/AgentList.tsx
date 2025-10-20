@@ -11,7 +11,7 @@ import SmartToyIcon from '@mui/icons-material/SmartToy';
 
 export const AgentList = () => (
   <List perPage={25} sort={{ field: 'createdAt', order: 'DESC' }}>
-    <Datagrid bulkActionButtons={false} rowClick="show">
+    <Datagrid rowClick="show">
       <FunctionField
         label="Agent"
         render={(record: any) => (

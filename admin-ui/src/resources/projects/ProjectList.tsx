@@ -9,7 +9,7 @@ import FolderIcon from '@mui/icons-material/Folder';
 
 export const ProjectList = () => (
   <List perPage={25} sort={{ field: 'updatedAt', order: 'DESC' }}>
-    <Datagrid bulkActionButtons={false} rowClick="show">
+    <Datagrid rowClick="show">
       <FunctionField
         label="Project"
         render={(record: any) => (

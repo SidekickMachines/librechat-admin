@@ -11,7 +11,7 @@ import MessageIcon from '@mui/icons-material/Message';
 
 export const MessageList = () => (
   <List perPage={25} sort={{ field: 'createdAt', order: 'DESC' }}>
-    <Datagrid bulkActionButtons={false} rowClick="show">
+    <Datagrid>
       <FunctionField
         label="Message"
         render={(record: any) => (

@@ -11,7 +11,7 @@ import TokenIcon from '@mui/icons-material/Token';
 
 export const TokenList = () => (
   <List perPage={25} sort={{ field: 'createdAt', order: 'DESC' }}>
-    <Datagrid bulkActionButtons={false}>
+    <Datagrid>
       <FunctionField
         label="Token"
         render={(record: any) => {

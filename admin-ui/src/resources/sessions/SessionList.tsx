@@ -11,7 +11,7 @@ import VpnKeyIcon from '@mui/icons-material/VpnKey';
 
 export const SessionList = () => (
   <List perPage={25} sort={{ field: 'expiration', order: 'DESC' }}>
-    <Datagrid bulkActionButtons={false}>
+    <Datagrid>
       <FunctionField
         label="Session"
         render={(record: any) => {

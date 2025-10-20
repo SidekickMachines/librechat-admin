@@ -12,7 +12,7 @@ import ImageIcon from '@mui/icons-material/Image';
 
 export const FileList = () => (
   <List perPage={25} sort={{ field: 'createdAt', order: 'DESC' }}>
-    <Datagrid bulkActionButtons={false} rowClick="show">
+    <Datagrid>
       <FunctionField
         label="File"
         render={(record: any) => (
