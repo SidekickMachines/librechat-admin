@@ -16,7 +16,6 @@ function App() {
       authProvider={authProvider}
       dashboard={Dashboard}
       title="LibreChat Admin"
-      basename="/admin"
     >
       <Resource
         name="users"
