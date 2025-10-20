@@ -1,0 +1,43 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: librechat-admin
+  namespace: librechat
+  labels:
+    app: librechat-admin-ui
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: librechat-admin-pod-reader
+  labels:
+    app: librechat-admin-ui
+rules:
+  # Allow listing and getting pods across all namespaces
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+  # Allow reading pod logs
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get", "list"]
+  # Allow listing namespaces (useful for discovering available namespaces)
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: librechat-admin-pod-reader-binding
+  labels:
+    app: librechat-admin-ui
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: librechat-admin-pod-reader
+subjects:
+  - kind: ServiceAccount
+    name: librechat-admin
+    namespace: librechat

@@ -15,6 +15,7 @@ spec:
       labels:
         app: librechat-admin-ui
     spec:
+      serviceAccountName: librechat-admin
       imagePullSecrets:
       - name: regcred
       containers:
