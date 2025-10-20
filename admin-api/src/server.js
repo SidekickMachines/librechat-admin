@@ -230,6 +230,169 @@ app.delete('/api/convos/:id', async (req, res) => {
   }
 });
 
+// ==================== ROLES ENDPOINTS ====================
+
+// GET /api/roles - List all roles with pagination
+app.get('/api/roles', async (req, res) => {
+  try {
+    const { page = '1', limit = '25', order = 'asc' } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const roles = await db.collection('roles')
+      .find({})
+      .sort({ name: order === 'desc' ? -1 : 1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .toArray();
+
+    const total = await db.collection('roles').countDocuments();
+
+    // Format for React-Admin
+    const formattedRoles = roles.map(role => ({
+      id: role._id.toString(),
+      _id: role._id.toString(),
+      name: role.name,
+      permissions: role.permissions,
+    }));
+
+    res.json({ data: formattedRoles, total });
+  } catch (error) {
+    console.error('Error fetching roles:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/roles/:id - Get single role
+app.get('/api/roles/:id', async (req, res) => {
+  try {
+    const role = await db.collection('roles').findOne({ _id: new ObjectId(req.params.id) });
+    if (!role) {
+      return res.status(404).json({ error: 'Role not found' });
+    }
+
+    res.json({
+      id: role._id.toString(),
+      _id: role._id.toString(),
+      ...role,
+    });
+  } catch (error) {
+    console.error('Error fetching role:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/roles - Create new role
+app.post('/api/roles', async (req, res) => {
+  try {
+    const { id: _, _id: __, ...roleData } = req.body;
+
+    // Validate required fields
+    if (!roleData.name) {
+      return res.status(400).json({ error: 'Role name is required' });
+    }
+
+    // Check if role with same name already exists
+    const existingRole = await db.collection('roles').findOne({ name: roleData.name });
+    if (existingRole) {
+      return res.status(400).json({ error: 'Role with this name already exists' });
+    }
+
+    // Create new role with default permissions structure if not provided
+    const newRole = {
+      name: roleData.name,
+      permissions: roleData.permissions || {
+        BOOKMARKS: { USE: false },
+        PROMPTS: { SHARED_GLOBAL: false, USE: false, CREATE: false },
+        MEMORIES: { USE: false, CREATE: false, UPDATE: false, READ: false, OPT_OUT: false },
+        AGENTS: { SHARED_GLOBAL: false, USE: false, CREATE: false },
+        MULTI_CONVO: { USE: false },
+        TEMPORARY_CHAT: { USE: false },
+        RUN_CODE: { USE: false },
+        WEB_SEARCH: { USE: false },
+        PEOPLE_PICKER: { VIEW_USERS: false, VIEW_GROUPS: false, VIEW_ROLES: false },
+        MARKETPLACE: { USE: false },
+        FILE_SEARCH: { USE: false },
+        FILE_CITATIONS: { USE: false },
+      },
+    };
+
+    const result = await db.collection('roles').insertOne(newRole);
+
+    const createdRole = {
+      id: result.insertedId.toString(),
+      _id: result.insertedId.toString(),
+      ...newRole,
+    };
+
+    res.status(201).json(createdRole);
+  } catch (error) {
+    console.error('Error creating role:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /api/roles/:id - Update role
+app.put('/api/roles/:id', async (req, res) => {
+  try {
+    const { id: _, _id: __, ...updateData } = req.body;
+
+    // If updating name, check if it conflicts with existing role
+    if (updateData.name) {
+      const existingRole = await db.collection('roles').findOne({
+        name: updateData.name,
+        _id: { $ne: new ObjectId(req.params.id) }
+      });
+      if (existingRole) {
+        return res.status(400).json({ error: 'Role with this name already exists' });
+      }
+    }
+
+    const result = await db.collection('roles').findOneAndUpdate(
+      { _id: new ObjectId(req.params.id) },
+      { $set: updateData },
+      { returnDocument: 'after' }
+    );
+
+    if (!result) {
+      return res.status(404).json({ error: 'Role not found' });
+    }
+
+    res.json({
+      id: result._id.toString(),
+      _id: result._id.toString(),
+      ...result,
+    });
+  } catch (error) {
+    console.error('Error updating role:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /api/roles/:id - Delete role
+app.delete('/api/roles/:id', async (req, res) => {
+  try {
+    // Check if any users are assigned this role
+    const role = await db.collection('roles').findOne({ _id: new ObjectId(req.params.id) });
+    if (role) {
+      const usersWithRole = await db.collection('users').countDocuments({ role: role.name });
+      if (usersWithRole > 0) {
+        return res.status(400).json({
+          error: `Cannot delete role. ${usersWithRole} user(s) are assigned this role.`
+        });
+      }
+    }
+
+    const result = await db.collection('roles').deleteOne({ _id: new ObjectId(req.params.id) });
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: 'Role not found' });
+    }
+    res.json({ id: req.params.id });
+  } catch (error) {
+    console.error('Error deleting role:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ==================== DASHBOARD/STATS ENDPOINTS ====================
 
 // GET /api/stats - Get dashboard statistics

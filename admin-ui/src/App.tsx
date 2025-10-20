@@ -6,8 +6,12 @@ import { UserList } from './resources/users/UserList';
 import { UserEdit } from './resources/users/UserEdit';
 import { UserCreate } from './resources/users/UserCreate';
 import { ConversationList } from './resources/conversations/ConversationList';
+import { RoleList } from './resources/roles/RoleList';
+import { RoleEdit } from './resources/roles/RoleEdit';
+import { RoleCreate } from './resources/roles/RoleCreate';
 import PeopleIcon from '@mui/icons-material/People';
 import ChatIcon from '@mui/icons-material/Chat';
+import SecurityIcon from '@mui/icons-material/Security';
 
 function App() {
   return (
@@ -24,6 +28,14 @@ function App() {
         create={UserCreate}
         icon={PeopleIcon}
         options={{ label: 'Users' }}
+      />
+      <Resource
+        name="roles"
+        list={RoleList}
+        edit={RoleEdit}
+        create={RoleCreate}
+        icon={SecurityIcon}
+        options={{ label: 'Roles' }}
       />
       <Resource
         name="convos"
