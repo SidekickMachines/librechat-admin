@@ -4,7 +4,6 @@ import {
   TextField,
   DateField,
   FunctionField,
-  FilterButton,
   TopToolbar,
   ExportButton,
   SelectColumnsButton,
@@ -14,7 +13,6 @@ import { Box, Chip } from '@mui/material';
 
 const ListActions = () => (
   <TopToolbar>
-    <FilterButton />
     <SelectColumnsButton />
     <ExportButton />
   </TopToolbar>
