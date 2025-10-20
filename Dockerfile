@@ -61,7 +61,7 @@ RUN echo '#!/bin/sh' > /start.sh && \
     echo 'NGINX_PID=$!' >> /start.sh && \
     echo 'echo "✅ All services started"' >> /start.sh && \
     echo 'echo "   - Backend API: http://localhost:3001"' >> /start.sh && \
-    echo '   - Frontend: http://localhost:80/admin/"' >> /start.sh && \
+    echo 'echo "   - Frontend: http://localhost:80/admin/"' >> /start.sh && \
     echo 'wait $API_PID $NGINX_PID' >> /start.sh && \
     chmod +x /start.sh
 
