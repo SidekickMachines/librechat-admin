@@ -11,10 +11,24 @@ import { RoleEdit } from './resources/roles/RoleEdit';
 import { RoleCreate } from './resources/roles/RoleCreate';
 import { PodList } from './resources/pods/PodList';
 import { PodShow } from './resources/pods/PodShow';
+import { MessageList } from './resources/messages/MessageList';
+import { AgentList } from './resources/agents/AgentList';
+import { FileList } from './resources/files/FileList';
+import { SessionList } from './resources/sessions/SessionList';
+import { TokenList } from './resources/tokens/TokenList';
+import { TransactionList } from './resources/transactions/TransactionList';
+import { ProjectList } from './resources/projects/ProjectList';
 import PeopleIcon from '@mui/icons-material/People';
 import ChatIcon from '@mui/icons-material/Chat';
 import SecurityIcon from '@mui/icons-material/Security';
 import StorageIcon from '@mui/icons-material/Storage';
+import MessageIcon from '@mui/icons-material/Message';
+import SmartToyIcon from '@mui/icons-material/SmartToy';
+import AttachFileIcon from '@mui/icons-material/AttachFile';
+import VpnKeyIcon from '@mui/icons-material/VpnKey';
+import TokenIcon from '@mui/icons-material/Token';
+import ReceiptIcon from '@mui/icons-material/Receipt';
+import FolderIcon from '@mui/icons-material/Folder';
 
 function App() {
   return (
@@ -52,6 +66,48 @@ function App() {
         show={PodShow}
         icon={StorageIcon}
         options={{ label: 'Pods' }}
+      />
+      <Resource
+        name="messages"
+        list={MessageList}
+        icon={MessageIcon}
+        options={{ label: 'Messages' }}
+      />
+      <Resource
+        name="agents"
+        list={AgentList}
+        icon={SmartToyIcon}
+        options={{ label: 'Agents' }}
+      />
+      <Resource
+        name="files"
+        list={FileList}
+        icon={AttachFileIcon}
+        options={{ label: 'Files' }}
+      />
+      <Resource
+        name="sessions"
+        list={SessionList}
+        icon={VpnKeyIcon}
+        options={{ label: 'Sessions' }}
+      />
+      <Resource
+        name="tokens"
+        list={TokenList}
+        icon={TokenIcon}
+        options={{ label: 'Tokens' }}
+      />
+      <Resource
+        name="transactions"
+        list={TransactionList}
+        icon={ReceiptIcon}
+        options={{ label: 'Transactions' }}
+      />
+      <Resource
+        name="projects"
+        list={ProjectList}
+        icon={FolderIcon}
+        options={{ label: 'Projects' }}
       />
     </Admin>
   );
