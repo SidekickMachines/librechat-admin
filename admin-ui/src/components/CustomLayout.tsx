@@ -1,4 +1,4 @@
-import { Layout, LayoutProps } from 'react-admin';
+import { Layout, type LayoutProps } from 'react-admin';
 import { CustomMenu } from './CustomMenu';
 
 export const CustomLayout = (props: LayoutProps) => (
