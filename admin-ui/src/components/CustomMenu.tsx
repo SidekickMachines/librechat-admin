@@ -1,4 +1,4 @@
-import { Menu, MenuItemLink, useResourceDefinitions } from 'react-admin';
+import { Menu, MenuItemLink, useResourceDefinitions, DashboardMenuItem } from 'react-admin';
 import { Box, Typography } from '@mui/material';
 import PeopleIcon from '@mui/icons-material/People';
 import SecurityIcon from '@mui/icons-material/Security';
@@ -39,7 +39,7 @@ export const CustomMenu = () => {
   return (
     <Menu
       sx={{
-        '& .RaMenuItemLink-root': {
+        '& .RaMenuItemLink-root, & .RaDashboardMenuItem-root': {
           borderRadius: 2,
           mx: 1,
           my: 0.5,
@@ -48,7 +48,7 @@ export const CustomMenu = () => {
             backgroundColor: 'action.hover',
             transform: 'translateX(4px)',
           },
-          '&.RaMenuItemLink-active': {
+          '&.RaMenuItemLink-active, &.RaDashboardMenuItem-active': {
             backgroundColor: 'primary.main',
             color: 'primary.contrastText',
             fontWeight: 600,
@@ -62,6 +62,8 @@ export const CustomMenu = () => {
         },
       }}
     >
+      <DashboardMenuItem sx={{ borderRadius: 2, mx: 1, my: 0.5 }} />
+
       <MenuSection title="User Management">
         {resources.users && (
           <MenuItemLink
