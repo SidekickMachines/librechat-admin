@@ -97,7 +97,6 @@ export const AuditList = () => {
     >
       <Datagrid
         bulkActionButtons={false}
-        rowClick="expand"
         sx={{
           '& .RaDatagrid-headerCell': {
             fontWeight: 700,
