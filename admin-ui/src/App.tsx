@@ -9,9 +9,12 @@ import { ConversationList } from './resources/conversations/ConversationList';
 import { RoleList } from './resources/roles/RoleList';
 import { RoleEdit } from './resources/roles/RoleEdit';
 import { RoleCreate } from './resources/roles/RoleCreate';
+import { PodList } from './resources/pods/PodList';
+import { PodShow } from './resources/pods/PodShow';
 import PeopleIcon from '@mui/icons-material/People';
 import ChatIcon from '@mui/icons-material/Chat';
 import SecurityIcon from '@mui/icons-material/Security';
+import StorageIcon from '@mui/icons-material/Storage';
 
 function App() {
   return (
@@ -42,6 +45,13 @@ function App() {
         list={ConversationList}
         icon={ChatIcon}
         options={{ label: 'Conversations' }}
+      />
+      <Resource
+        name="pods"
+        list={PodList}
+        show={PodShow}
+        icon={StorageIcon}
+        options={{ label: 'Pods' }}
       />
     </Admin>
   );

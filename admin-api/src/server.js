@@ -1,6 +1,7 @@
 const express = require('express');
 const { MongoClient, ObjectId } = require('mongodb');
 const cors = require('cors');
+const k8sService = require('./k8s.service');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -455,6 +456,70 @@ app.get('/api/user', async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching current user:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==================== POD MONITORING ENDPOINTS ====================
+
+// GET /api/pods - List all pods across specified namespaces
+app.get('/api/pods', async (req, res) => {
+  try {
+    const { namespaces } = req.query;
+    const namespacesArray = namespaces
+      ? namespaces.split(',')
+      : ['librechat', 'snow-mcp', 'default'];
+
+    const pods = await k8sService.listPods(namespacesArray);
+
+    // Format for React-Admin
+    res.json({
+      data: pods,
+      total: pods.length,
+    });
+  } catch (error) {
+    console.error('Error listing pods:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/pods/:id - Get single pod details
+app.get('/api/pods/:id', async (req, res) => {
+  try {
+    // ID format: namespace-podname
+    const [namespace, ...podNameParts] = req.params.id.split('-');
+    const podName = podNameParts.join('-');
+
+    if (!namespace || !podName) {
+      return res.status(400).json({ error: 'Invalid pod ID format. Expected: namespace-podname' });
+    }
+
+    const pod = await k8sService.getPod(namespace, podName);
+    res.json({
+      id: pod.id,
+      ...pod,
+    });
+  } catch (error) {
+    console.error('Error fetching pod:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/pods/:namespace/:podName/logs - Get pod logs
+app.get('/api/pods/:namespace/:podName/logs', async (req, res) => {
+  try {
+    const { namespace, podName } = req.params;
+    const { tailLines = '100', timestamps = 'true', container } = req.query;
+
+    const logs = await k8sService.getPodLogs(namespace, podName, {
+      tailLines: parseInt(tailLines),
+      timestamps: timestamps === 'true',
+      container: container || null,
+    });
+
+    res.json({ logs });
+  } catch (error) {
+    console.error(`Error fetching logs for ${req.params.namespace}/${req.params.podName}:`, error);
     res.status(500).json({ error: error.message });
   }
 });
