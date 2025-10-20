@@ -1,6 +1,5 @@
 import {
   Edit,
-  SimpleForm,
   TextInput,
   BooleanInput,
   required,
