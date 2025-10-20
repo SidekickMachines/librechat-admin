@@ -6,7 +6,6 @@ import {
   DateField,
   EditButton,
   DeleteButton,
-  BooleanField,
   FunctionField,
 } from 'react-admin';
 import { Chip, Box, Avatar } from '@mui/material';
