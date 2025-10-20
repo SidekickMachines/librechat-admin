@@ -62,6 +62,7 @@ jobs:
           KUBECONFIG_DATA: ${{ secrets.K3S_KUBE_CONFIG }}
           AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          TENANT_ID: ${{ secrets.TENANT_ID }}
         run: |
           echo "$KUBECONFIG_DATA" | base64 -d > kubeconfig
           export KUBECONFIG=./kubeconfig
@@ -76,6 +77,9 @@ jobs:
             --from-literal=OAUTH2_PROXY_CLIENT_SECRET="$AZURE_CLIENT_SECRET" \
             --from-literal=OAUTH2_PROXY_COOKIE_SECRET="$COOKIE_SECRET" \
             --dry-run=client -o yaml | kubectl apply -f -
+
+          # Update OAuth2-Proxy deployment with Tenant ID from secrets
+          sed -i "s/YOUR_TENANT_ID/$TENANT_ID/g" k8s/oauth2-proxy/deployment.yaml
 
           # Apply Kubernetes manifests
           kubectl apply -f k8s/admin-ui/deployment.yaml
