@@ -460,6 +460,349 @@ app.get('/api/user', async (req, res) => {
   }
 });
 
+// ==================== MESSAGES ENDPOINTS ====================
+
+// GET /api/messages - List all messages with pagination
+app.get('/api/messages', async (req, res) => {
+  try {
+    const { page = '1', limit = '25', order = 'desc' } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const messages = await db.collection('messages')
+      .find({})
+      .sort({ createdAt: order === 'desc' ? -1 : 1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .toArray();
+
+    const total = await db.collection('messages').countDocuments();
+
+    const formattedMessages = messages.map(msg => ({
+      id: msg._id.toString(),
+      _id: msg._id.toString(),
+      ...msg,
+    }));
+
+    res.json({ data: formattedMessages, total });
+  } catch (error) {
+    console.error('Error fetching messages:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/messages/:id - Get single message
+app.get('/api/messages/:id', async (req, res) => {
+  try {
+    const message = await db.collection('messages').findOne({ _id: new ObjectId(req.params.id) });
+    if (!message) {
+      return res.status(404).json({ error: 'Message not found' });
+    }
+
+    res.json({
+      id: message._id.toString(),
+      _id: message._id.toString(),
+      ...message,
+    });
+  } catch (error) {
+    console.error('Error fetching message:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==================== AGENTS ENDPOINTS ====================
+
+// GET /api/agents - List all agents with pagination
+app.get('/api/agents', async (req, res) => {
+  try {
+    const { page = '1', limit = '25', order = 'desc' } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const agents = await db.collection('agents')
+      .find({})
+      .sort({ createdAt: order === 'desc' ? -1 : 1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .toArray();
+
+    const total = await db.collection('agents').countDocuments();
+
+    const formattedAgents = agents.map(agent => ({
+      id: agent._id.toString(),
+      _id: agent._id.toString(),
+      ...agent,
+    }));
+
+    res.json({ data: formattedAgents, total });
+  } catch (error) {
+    console.error('Error fetching agents:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/agents/:id - Get single agent
+app.get('/api/agents/:id', async (req, res) => {
+  try {
+    const agent = await db.collection('agents').findOne({ _id: new ObjectId(req.params.id) });
+    if (!agent) {
+      return res.status(404).json({ error: 'Agent not found' });
+    }
+
+    res.json({
+      id: agent._id.toString(),
+      _id: agent._id.toString(),
+      ...agent,
+    });
+  } catch (error) {
+    console.error('Error fetching agent:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==================== FILES ENDPOINTS ====================
+
+// GET /api/files - List all files with pagination
+app.get('/api/files', async (req, res) => {
+  try {
+    const { page = '1', limit = '25', order = 'desc' } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const files = await db.collection('files')
+      .find({})
+      .sort({ createdAt: order === 'desc' ? -1 : 1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .toArray();
+
+    const total = await db.collection('files').countDocuments();
+
+    const formattedFiles = files.map(file => ({
+      id: file._id.toString(),
+      _id: file._id.toString(),
+      ...file,
+    }));
+
+    res.json({ data: formattedFiles, total });
+  } catch (error) {
+    console.error('Error fetching files:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/files/:id - Get single file
+app.get('/api/files/:id', async (req, res) => {
+  try {
+    const file = await db.collection('files').findOne({ _id: new ObjectId(req.params.id) });
+    if (!file) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    res.json({
+      id: file._id.toString(),
+      _id: file._id.toString(),
+      ...file,
+    });
+  } catch (error) {
+    console.error('Error fetching file:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==================== SESSIONS ENDPOINTS ====================
+
+// GET /api/sessions - List all sessions with pagination
+app.get('/api/sessions', async (req, res) => {
+  try {
+    const { page = '1', limit = '25', order = 'desc' } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const sessions = await db.collection('sessions')
+      .find({})
+      .sort({ expiration: order === 'desc' ? -1 : 1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .toArray();
+
+    const total = await db.collection('sessions').countDocuments();
+
+    const formattedSessions = sessions.map(session => ({
+      id: session._id.toString(),
+      _id: session._id.toString(),
+      ...session,
+    }));
+
+    res.json({ data: formattedSessions, total });
+  } catch (error) {
+    console.error('Error fetching sessions:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/sessions/:id - Get single session
+app.get('/api/sessions/:id', async (req, res) => {
+  try {
+    const session = await db.collection('sessions').findOne({ _id: new ObjectId(req.params.id) });
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    res.json({
+      id: session._id.toString(),
+      _id: session._id.toString(),
+      ...session,
+    });
+  } catch (error) {
+    console.error('Error fetching session:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==================== TOKENS ENDPOINTS ====================
+
+// GET /api/tokens - List all tokens with pagination
+app.get('/api/tokens', async (req, res) => {
+  try {
+    const { page = '1', limit = '25', order = 'desc' } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const tokens = await db.collection('tokens')
+      .find({})
+      .sort({ createdAt: order === 'desc' ? -1 : 1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .toArray();
+
+    const total = await db.collection('tokens').countDocuments();
+
+    const formattedTokens = tokens.map(token => ({
+      id: token._id.toString(),
+      _id: token._id.toString(),
+      ...token,
+    }));
+
+    res.json({ data: formattedTokens, total });
+  } catch (error) {
+    console.error('Error fetching tokens:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/tokens/:id - Get single token
+app.get('/api/tokens/:id', async (req, res) => {
+  try {
+    const token = await db.collection('tokens').findOne({ _id: new ObjectId(req.params.id) });
+    if (!token) {
+      return res.status(404).json({ error: 'Token not found' });
+    }
+
+    res.json({
+      id: token._id.toString(),
+      _id: token._id.toString(),
+      ...token,
+    });
+  } catch (error) {
+    console.error('Error fetching token:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==================== TRANSACTIONS ENDPOINTS ====================
+
+// GET /api/transactions - List all transactions with pagination
+app.get('/api/transactions', async (req, res) => {
+  try {
+    const { page = '1', limit = '25', order = 'desc' } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const transactions = await db.collection('transactions')
+      .find({})
+      .sort({ createdAt: order === 'desc' ? -1 : 1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .toArray();
+
+    const total = await db.collection('transactions').countDocuments();
+
+    const formattedTransactions = transactions.map(txn => ({
+      id: txn._id.toString(),
+      _id: txn._id.toString(),
+      ...txn,
+    }));
+
+    res.json({ data: formattedTransactions, total });
+  } catch (error) {
+    console.error('Error fetching transactions:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/transactions/:id - Get single transaction
+app.get('/api/transactions/:id', async (req, res) => {
+  try {
+    const transaction = await db.collection('transactions').findOne({ _id: new ObjectId(req.params.id) });
+    if (!transaction) {
+      return res.status(404).json({ error: 'Transaction not found' });
+    }
+
+    res.json({
+      id: transaction._id.toString(),
+      _id: transaction._id.toString(),
+      ...transaction,
+    });
+  } catch (error) {
+    console.error('Error fetching transaction:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==================== PROJECTS ENDPOINTS ====================
+
+// GET /api/projects - List all projects with pagination
+app.get('/api/projects', async (req, res) => {
+  try {
+    const { page = '1', limit = '25', order = 'desc' } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const projects = await db.collection('projects')
+      .find({})
+      .sort({ updatedAt: order === 'desc' ? -1 : 1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .toArray();
+
+    const total = await db.collection('projects').countDocuments();
+
+    const formattedProjects = projects.map(project => ({
+      id: project._id.toString(),
+      _id: project._id.toString(),
+      ...project,
+    }));
+
+    res.json({ data: formattedProjects, total });
+  } catch (error) {
+    console.error('Error fetching projects:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/projects/:id - Get single project
+app.get('/api/projects/:id', async (req, res) => {
+  try {
+    const project = await db.collection('projects').findOne({ _id: new ObjectId(req.params.id) });
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+
+    res.json({
+      id: project._id.toString(),
+      _id: project._id.toString(),
+      ...project,
+    });
+  } catch (error) {
+    console.error('Error fetching project:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ==================== POD MONITORING ENDPOINTS ====================
 
 // GET /api/pods - List all pods across specified namespaces
