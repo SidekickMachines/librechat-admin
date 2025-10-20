@@ -12,6 +12,7 @@ import AttachFileIcon from '@mui/icons-material/AttachFile';
 import TokenIcon from '@mui/icons-material/Token';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
+import AssessmentIcon from '@mui/icons-material/Assessment';
 
 const MenuSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <Box sx={{ mb: 2 }}>
@@ -155,6 +156,16 @@ export const CustomMenu = () => {
             to="/transactions"
             primaryText="Transactions"
             leftIcon={<ReceiptIcon />}
+          />
+        )}
+      </MenuSection>
+
+      <MenuSection title="Administration">
+        {resources['audit-logs'] && (
+          <MenuItemLink
+            to="/audit-logs"
+            primaryText="Audit Logs"
+            leftIcon={<AssessmentIcon />}
           />
         )}
       </MenuSection>

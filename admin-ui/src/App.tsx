@@ -24,6 +24,7 @@ import { SessionList } from './resources/sessions/SessionList';
 import { TokenList } from './resources/tokens/TokenList';
 import { TransactionList } from './resources/transactions/TransactionList';
 import { ProjectList } from './resources/projects/ProjectList';
+import { AuditList } from './resources/audit/AuditList';
 import PeopleIcon from '@mui/icons-material/People';
 import ChatIcon from '@mui/icons-material/Chat';
 import SecurityIcon from '@mui/icons-material/Security';
@@ -35,6 +36,7 @@ import VpnKeyIcon from '@mui/icons-material/VpnKey';
 import TokenIcon from '@mui/icons-material/Token';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import FolderIcon from '@mui/icons-material/Folder';
+import AssessmentIcon from '@mui/icons-material/Assessment';
 
 function App() {
   return (
@@ -118,6 +120,12 @@ function App() {
         list={ProjectList}
         icon={FolderIcon}
         options={{ label: 'Projects' }}
+      />
+      <Resource
+        name="audit-logs"
+        list={AuditList}
+        icon={AssessmentIcon}
+        options={{ label: 'Audit Logs' }}
       />
       <CustomRoutes>
         <Route path="/costs" element={<CostDashboard />} />

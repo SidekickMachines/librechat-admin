@@ -25,6 +25,48 @@ async function connectDB() {
   }
 }
 
+// ==================== AUDIT LOGGING ====================
+
+/**
+ * Create an audit log entry
+ * @param {string} action - The action performed ('create', 'update', 'delete')
+ * @param {string} resource - The resource type (e.g., 'users', 'roles', 'agents')
+ * @param {string} resourceId - The ID of the affected resource
+ * @param {string} userEmail - Email of the user performing the action
+ * @param {string} userName - Name of the user performing the action
+ * @param {object} data - Additional data (changes for update, full data for create/delete)
+ * @param {string} ipAddress - IP address of the request
+ */
+async function createAuditLog(action, resource, resourceId, userEmail, userName, data = {}, ipAddress = null) {
+  try {
+    const auditLog = {
+      action,
+      resource,
+      resourceId,
+      userEmail,
+      userName,
+      data,
+      ipAddress,
+      timestamp: new Date(),
+    };
+
+    await db.collection('audit_logs').insertOne(auditLog);
+    console.log(`✅ Audit log created: ${action} ${resource} by ${userEmail}`);
+  } catch (error) {
+    console.error('❌ Error creating audit log:', error);
+    // Don't throw - we don't want audit logging to break the main operation
+  }
+}
+
+/**
+ * Extract user info from OAuth2-Proxy headers
+ */
+function getUserFromHeaders(req) {
+  const userEmail = req.headers['x-forwarded-email'] || req.headers['x-auth-request-email'] || 'unknown';
+  const userName = req.headers['x-forwarded-user'] || req.headers['x-auth-request-user'] || userEmail;
+  return { userEmail, userName };
+}
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -114,6 +156,14 @@ app.post('/api/users', async (req, res) => {
       ...newUser,
     };
 
+    // Audit log
+    const { userEmail, userName } = getUserFromHeaders(req);
+    await createAuditLog('create', 'users', result.insertedId.toString(), userEmail, userName, {
+      username: newUser.username,
+      email: newUser.email,
+      role: newUser.role,
+    }, req.ip);
+
     res.status(201).json(createdUser);
   } catch (error) {
     console.error('Error creating user:', error);
@@ -136,6 +186,12 @@ app.put('/api/users/:id', async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
+    // Audit log
+    const { userEmail, userName } = getUserFromHeaders(req);
+    await createAuditLog('update', 'users', req.params.id, userEmail, userName, {
+      changes: updateData,
+    }, req.ip);
+
     res.json({
       id: result._id.toString(),
       _id: result._id.toString(),
@@ -150,10 +206,20 @@ app.put('/api/users/:id', async (req, res) => {
 // DELETE /api/users/:id - Delete user
 app.delete('/api/users/:id', async (req, res) => {
   try {
+    // Get user before deleting for audit log
+    const user = await db.collection('users').findOne({ _id: new ObjectId(req.params.id) });
+
     const result = await db.collection('users').deleteOne({ _id: new ObjectId(req.params.id) });
     if (result.deletedCount === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
+
+    // Audit log
+    const { userEmail, userName } = getUserFromHeaders(req);
+    await createAuditLog('delete', 'users', req.params.id, userEmail, userName, {
+      deletedUser: user ? { username: user.username, email: user.email } : null,
+    }, req.ip);
+
     res.json({ id: req.params.id });
   } catch (error) {
     console.error('Error deleting user:', error);
@@ -220,10 +286,20 @@ app.get('/api/convos/:id', async (req, res) => {
 // DELETE /api/convos/:id - Delete conversation
 app.delete('/api/convos/:id', async (req, res) => {
   try {
+    // Get conversation before deleting for audit log
+    const convo = await db.collection('conversations').findOne({ conversationId: req.params.id });
+
     const result = await db.collection('conversations').deleteOne({ conversationId: req.params.id });
     if (result.deletedCount === 0) {
       return res.status(404).json({ error: 'Conversation not found' });
     }
+
+    // Audit log
+    const { userEmail, userName } = getUserFromHeaders(req);
+    await createAuditLog('delete', 'conversations', req.params.id, userEmail, userName, {
+      deletedConversation: convo ? { title: convo.title, user: convo.user } : null,
+    }, req.ip);
+
     res.json({ id: req.params.id });
   } catch (error) {
     console.error('Error deleting conversation:', error);
@@ -325,6 +401,12 @@ app.post('/api/roles', async (req, res) => {
       ...newRole,
     };
 
+    // Audit log
+    const { userEmail, userName } = getUserFromHeaders(req);
+    await createAuditLog('create', 'roles', result.insertedId.toString(), userEmail, userName, {
+      name: newRole.name,
+    }, req.ip);
+
     res.status(201).json(createdRole);
   } catch (error) {
     console.error('Error creating role:', error);
@@ -358,6 +440,12 @@ app.put('/api/roles/:id', async (req, res) => {
       return res.status(404).json({ error: 'Role not found' });
     }
 
+    // Audit log
+    const { userEmail, userName } = getUserFromHeaders(req);
+    await createAuditLog('update', 'roles', req.params.id, userEmail, userName, {
+      changes: updateData,
+    }, req.ip);
+
     res.json({
       id: result._id.toString(),
       _id: result._id.toString(),
@@ -387,6 +475,13 @@ app.delete('/api/roles/:id', async (req, res) => {
     if (result.deletedCount === 0) {
       return res.status(404).json({ error: 'Role not found' });
     }
+
+    // Audit log
+    const { userEmail, userName } = getUserFromHeaders(req);
+    await createAuditLog('delete', 'roles', req.params.id, userEmail, userName, {
+      deletedRole: role ? { name: role.name } : null,
+    }, req.ip);
+
     res.json({ id: req.params.id });
   } catch (error) {
     console.error('Error deleting role:', error);
@@ -512,10 +607,19 @@ app.get('/api/messages/:id', async (req, res) => {
 // DELETE /api/messages/:id - Delete message
 app.delete('/api/messages/:id', async (req, res) => {
   try {
+    const message = await db.collection('messages').findOne({ _id: new ObjectId(req.params.id) });
+
     const result = await db.collection('messages').deleteOne({ _id: new ObjectId(req.params.id) });
     if (result.deletedCount === 0) {
       return res.status(404).json({ error: 'Message not found' });
     }
+
+    // Audit log
+    const { userEmail, userName } = getUserFromHeaders(req);
+    await createAuditLog('delete', 'messages', req.params.id, userEmail, userName, {
+      deletedMessage: message ? { conversationId: message.conversationId } : null,
+    }, req.ip);
+
     res.json({ id: req.params.id });
   } catch (error) {
     console.error('Error deleting message:', error);
@@ -576,11 +680,21 @@ app.get('/api/agents/:id', async (req, res) => {
 // DELETE /api/agents/:id - Delete agent
 app.delete('/api/agents/:id', async (req, res) => {
   try {
+    // Get agent before deleting for audit log
+    const agent = await db.collection('agents').findOne({ id: req.params.id });
+
     // Agents use a custom 'id' field, not MongoDB _id
     const result = await db.collection('agents').deleteOne({ id: req.params.id });
     if (result.deletedCount === 0) {
       return res.status(404).json({ error: 'Agent not found' });
     }
+
+    // Audit log
+    const { userEmail, userName } = getUserFromHeaders(req);
+    await createAuditLog('delete', 'agents', req.params.id, userEmail, userName, {
+      deletedAgent: agent ? { name: agent.name } : null,
+    }, req.ip);
+
     res.json({ id: req.params.id });
   } catch (error) {
     console.error('Error deleting agent:', error);
@@ -603,6 +717,12 @@ app.put('/api/agents/:id', async (req, res) => {
     if (!result) {
       return res.status(404).json({ error: 'Agent not found' });
     }
+
+    // Audit log
+    const { userEmail, userName } = getUserFromHeaders(req);
+    await createAuditLog('update', 'agents', req.params.id, userEmail, userName, {
+      changes: updateData,
+    }, req.ip);
 
     res.json({
       id: result.id,
@@ -667,6 +787,14 @@ app.post('/api/agents', async (req, res) => {
       ...newAgent,
     };
 
+    // Audit log
+    const { userEmail, userName } = getUserFromHeaders(req);
+    await createAuditLog('create', 'agents', newAgent.id, userEmail, userName, {
+      name: newAgent.name,
+      provider: newAgent.provider,
+      model: newAgent.model,
+    }, req.ip);
+
     res.status(201).json(createdAgent);
   } catch (error) {
     console.error('Error creating agent:', error);
@@ -726,10 +854,19 @@ app.get('/api/files/:id', async (req, res) => {
 // DELETE /api/files/:id - Delete file
 app.delete('/api/files/:id', async (req, res) => {
   try {
+    const file = await db.collection('files').findOne({ _id: new ObjectId(req.params.id) });
+
     const result = await db.collection('files').deleteOne({ _id: new ObjectId(req.params.id) });
     if (result.deletedCount === 0) {
       return res.status(404).json({ error: 'File not found' });
     }
+
+    // Audit log
+    const { userEmail, userName } = getUserFromHeaders(req);
+    await createAuditLog('delete', 'files', req.params.id, userEmail, userName, {
+      deletedFile: file ? { filename: file.filename, filepath: file.filepath } : null,
+    }, req.ip);
+
     res.json({ id: req.params.id });
   } catch (error) {
     console.error('Error deleting file:', error);
@@ -789,10 +926,19 @@ app.get('/api/sessions/:id', async (req, res) => {
 // DELETE /api/sessions/:id - Delete session
 app.delete('/api/sessions/:id', async (req, res) => {
   try {
+    const session = await db.collection('sessions').findOne({ _id: new ObjectId(req.params.id) });
+
     const result = await db.collection('sessions').deleteOne({ _id: new ObjectId(req.params.id) });
     if (result.deletedCount === 0) {
       return res.status(404).json({ error: 'Session not found' });
     }
+
+    // Audit log
+    const { userEmail, userName } = getUserFromHeaders(req);
+    await createAuditLog('delete', 'sessions', req.params.id, userEmail, userName, {
+      deletedSession: session ? { session: session.session } : null,
+    }, req.ip);
+
     res.json({ id: req.params.id });
   } catch (error) {
     console.error('Error deleting session:', error);
@@ -852,10 +998,19 @@ app.get('/api/tokens/:id', async (req, res) => {
 // DELETE /api/tokens/:id - Delete token
 app.delete('/api/tokens/:id', async (req, res) => {
   try {
+    const token = await db.collection('tokens').findOne({ _id: new ObjectId(req.params.id) });
+
     const result = await db.collection('tokens').deleteOne({ _id: new ObjectId(req.params.id) });
     if (result.deletedCount === 0) {
       return res.status(404).json({ error: 'Token not found' });
     }
+
+    // Audit log
+    const { userEmail, userName } = getUserFromHeaders(req);
+    await createAuditLog('delete', 'tokens', req.params.id, userEmail, userName, {
+      deletedToken: token ? { user: token.user } : null,
+    }, req.ip);
+
     res.json({ id: req.params.id });
   } catch (error) {
     console.error('Error deleting token:', error);
@@ -915,10 +1070,19 @@ app.get('/api/transactions/:id', async (req, res) => {
 // DELETE /api/transactions/:id - Delete transaction
 app.delete('/api/transactions/:id', async (req, res) => {
   try {
+    const transaction = await db.collection('transactions').findOne({ _id: new ObjectId(req.params.id) });
+
     const result = await db.collection('transactions').deleteOne({ _id: new ObjectId(req.params.id) });
     if (result.deletedCount === 0) {
       return res.status(404).json({ error: 'Transaction not found' });
     }
+
+    // Audit log
+    const { userEmail, userName } = getUserFromHeaders(req);
+    await createAuditLog('delete', 'transactions', req.params.id, userEmail, userName, {
+      deletedTransaction: transaction ? { user: transaction.user, rawAmount: transaction.rawAmount } : null,
+    }, req.ip);
+
     res.json({ id: req.params.id });
   } catch (error) {
     console.error('Error deleting transaction:', error);
@@ -978,13 +1142,101 @@ app.get('/api/projects/:id', async (req, res) => {
 // DELETE /api/projects/:id - Delete project
 app.delete('/api/projects/:id', async (req, res) => {
   try {
+    const project = await db.collection('projects').findOne({ _id: new ObjectId(req.params.id) });
+
     const result = await db.collection('projects').deleteOne({ _id: new ObjectId(req.params.id) });
     if (result.deletedCount === 0) {
       return res.status(404).json({ error: 'Project not found' });
     }
+
+    // Audit log
+    const { userEmail, userName } = getUserFromHeaders(req);
+    await createAuditLog('delete', 'projects', req.params.id, userEmail, userName, {
+      deletedProject: project ? { name: project.name } : null,
+    }, req.ip);
+
     res.json({ id: req.params.id });
   } catch (error) {
     console.error('Error deleting project:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==================== AUDIT LOGS ENDPOINTS ====================
+
+// GET /api/audit-logs - List all audit logs with pagination
+app.get('/api/audit-logs', async (req, res) => {
+  try {
+    const { page = '1', limit = '50', order = 'desc', action, resource, userEmail } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    // Build filter
+    const filter = {};
+    if (action) filter.action = action;
+    if (resource) filter.resource = resource;
+    if (userEmail) filter.userEmail = userEmail;
+
+    const auditLogs = await db.collection('audit_logs')
+      .find(filter)
+      .sort({ timestamp: order === 'desc' ? -1 : 1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .toArray();
+
+    const total = await db.collection('audit_logs').countDocuments(filter);
+
+    // Format for React-Admin
+    const formattedLogs = auditLogs.map(log => ({
+      id: log._id.toString(),
+      _id: log._id.toString(),
+      action: log.action,
+      resource: log.resource,
+      resourceId: log.resourceId,
+      userEmail: log.userEmail,
+      userName: log.userName,
+      data: log.data,
+      ipAddress: log.ipAddress,
+      timestamp: log.timestamp,
+    }));
+
+    res.json({ data: formattedLogs, total });
+  } catch (error) {
+    console.error('Error fetching audit logs:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/audit-logs/:id - Get single audit log
+app.get('/api/audit-logs/:id', async (req, res) => {
+  try {
+    const auditLog = await db.collection('audit_logs').findOne({ _id: new ObjectId(req.params.id) });
+    if (!auditLog) {
+      return res.status(404).json({ error: 'Audit log not found' });
+    }
+
+    res.json({
+      id: auditLog._id.toString(),
+      _id: auditLog._id.toString(),
+      ...auditLog,
+    });
+  } catch (error) {
+    console.error('Error fetching audit log:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /api/audit-logs/:id - Delete audit log (for cleanup)
+app.delete('/api/audit-logs/:id', async (req, res) => {
+  try {
+    const result = await db.collection('audit_logs').deleteOne({ _id: new ObjectId(req.params.id) });
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: 'Audit log not found' });
+    }
+
+    // Note: We don't create an audit log for deleting audit logs to avoid infinite recursion
+    res.json({ id: req.params.id });
+  } catch (error) {
+    console.error('Error deleting audit log:', error);
     res.status(500).json({ error: error.message });
   }
 });
