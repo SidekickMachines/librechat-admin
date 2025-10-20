@@ -24,6 +24,16 @@ spec:
           ports:
             - containerPort: 80
               name: http
+            - containerPort: 3001
+              name: api
+          env:
+            # MongoDB connection for backend API
+            - name: MONGODB_URI
+              value: "mongodb://mongo.librechat.svc.cluster.local:27017"
+            - name: DB_NAME
+              value: "LibreChat"
+            - name: PORT
+              value: "3001"
           resources:
             requests:
               memory: "64Mi"
