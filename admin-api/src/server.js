@@ -588,6 +588,92 @@ app.delete('/api/agents/:id', async (req, res) => {
   }
 });
 
+// PUT /api/agents/:id - Update agent
+app.put('/api/agents/:id', async (req, res) => {
+  try {
+    const { id: _reqId, _id: __, ...updateData } = req.body;
+
+    // Agents use a custom 'id' field, not MongoDB _id
+    const result = await db.collection('agents').findOneAndUpdate(
+      { id: req.params.id },
+      { $set: { ...updateData, updatedAt: new Date() } },
+      { returnDocument: 'after' }
+    );
+
+    if (!result) {
+      return res.status(404).json({ error: 'Agent not found' });
+    }
+
+    res.json({
+      id: result.id,
+      _id: result._id.toString(),
+      ...result,
+    });
+  } catch (error) {
+    console.error('Error updating agent:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/agents - Create new agent
+app.post('/api/agents', async (req, res) => {
+  try {
+    const { id: _, _id: __, ...agentData } = req.body;
+
+    // Generate custom agent ID (format: agent_<random>)
+    const generateAgentId = () => {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      let result = 'agent_';
+      for (let i = 0; i < 21; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return result;
+    };
+
+    // Ensure required fields
+    if (!agentData.name) {
+      return res.status(400).json({ error: 'Agent name is required' });
+    }
+
+    // Create new agent with defaults
+    const newAgent = {
+      id: generateAgentId(),
+      name: agentData.name,
+      description: agentData.description || '',
+      instructions: agentData.instructions || '',
+      provider: agentData.provider || 'azureOpenAI',
+      model: agentData.model || 'gpt-4',
+      artifacts: agentData.artifacts || '',
+      tools: agentData.tools || [],
+      tool_kwargs: agentData.tool_kwargs || [],
+      agent_ids: agentData.agent_ids || [],
+      conversation_starters: agentData.conversation_starters || [],
+      projectIds: agentData.projectIds || [],
+      category: agentData.category || 'general',
+      support_contact: agentData.support_contact || { name: '', email: '' },
+      is_promoted: agentData.is_promoted || false,
+      end_after_tools: agentData.end_after_tools || false,
+      hide_sequential_outputs: agentData.hide_sequential_outputs || false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      versions: [],
+    };
+
+    const result = await db.collection('agents').insertOne(newAgent);
+
+    const createdAgent = {
+      id: newAgent.id,
+      _id: result.insertedId.toString(),
+      ...newAgent,
+    };
+
+    res.status(201).json(createdAgent);
+  } catch (error) {
+    console.error('Error creating agent:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ==================== FILES ENDPOINTS ====================
 
 // GET /api/files - List all files with pagination
