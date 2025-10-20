@@ -5,7 +5,6 @@ import {
   DateField,
   BooleanField,
   FunctionField,
-  ReferenceField,
 } from 'react-admin';
 import { Box, Chip } from '@mui/material';
 import MessageIcon from '@mui/icons-material/Message';

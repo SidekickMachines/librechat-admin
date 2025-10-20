@@ -6,7 +6,7 @@ import {
   FunctionField,
   NumberField,
 } from 'react-admin';
-import { Box, Chip } from '@mui/material';
+import { Box } from '@mui/material';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import ImageIcon from '@mui/icons-material/Image';
 

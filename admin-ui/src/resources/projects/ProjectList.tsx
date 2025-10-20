@@ -1,7 +1,6 @@
 import {
   List,
   Datagrid,
-  TextField,
   DateField,
   FunctionField,
 } from 'react-admin';

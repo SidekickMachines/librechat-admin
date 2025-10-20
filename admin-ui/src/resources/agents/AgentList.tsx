@@ -5,9 +5,6 @@ import {
   DateField,
   BooleanField,
   FunctionField,
-  ArrayField,
-  ChipField,
-  SingleFieldList,
 } from 'react-admin';
 import { Box, Chip } from '@mui/material';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
