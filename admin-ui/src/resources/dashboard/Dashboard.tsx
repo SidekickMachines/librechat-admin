@@ -1,6 +1,7 @@
 import { Box, Typography, Paper, IconButton, CircularProgress, Chip, Tooltip } from '@mui/material';
-import { Title, useNavigate } from 'react-admin';
+import { Title } from 'react-admin';
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ChatIcon from '@mui/icons-material/Chat';
 import StorageIcon from '@mui/icons-material/Storage';
@@ -232,7 +233,7 @@ export const Dashboard = () => {
     fetchSystemStatus();
   };
 
-  const handleServiceClick = (serviceName: string, pods: ServiceStatus['pods']) => {
+  const handleServiceClick = (pods: ServiceStatus['pods']) => {
     if (pods.length > 0) {
       const pod = pods[0];
       const podId = `${pod.namespace}::${pod.name}`;
@@ -307,7 +308,7 @@ export const Dashboard = () => {
               status={systemStatus.librechat.status}
               reason={systemStatus.librechat.reason}
               pods={systemStatus.librechat.pods}
-              onClick={() => handleServiceClick('librechat', systemStatus.librechat.pods)}
+              onClick={() => handleServiceClick(systemStatus.librechat.pods)}
             />
 
             {/* Connection Arrow */}
@@ -320,7 +321,7 @@ export const Dashboard = () => {
               status={systemStatus.mongodb.status}
               reason={systemStatus.mongodb.reason}
               pods={systemStatus.mongodb.pods}
-              onClick={() => handleServiceClick('mongodb', systemStatus.mongodb.pods)}
+              onClick={() => handleServiceClick(systemStatus.mongodb.pods)}
             />
 
             {/* Connection Arrow to MCP */}
@@ -333,7 +334,7 @@ export const Dashboard = () => {
               status={systemStatus.mcp.status}
               reason={systemStatus.mcp.reason}
               pods={systemStatus.mcp.pods}
-              onClick={() => handleServiceClick('mcp', systemStatus.mcp.pods)}
+              onClick={() => handleServiceClick(systemStatus.mcp.pods)}
             />
           </Box>
 
