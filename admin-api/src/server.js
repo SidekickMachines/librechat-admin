@@ -225,6 +225,48 @@ app.get('/api/stats', async (req, res) => {
   }
 });
 
+// ==================== CURRENT USER ENDPOINT ====================
+
+// GET /api/user - Get current authenticated user from OAuth2-Proxy headers
+app.get('/api/user', async (req, res) => {
+  try {
+    // OAuth2-Proxy injects authentication headers
+    const userEmail = req.headers['x-forwarded-email'] || req.headers['x-auth-request-email'];
+
+    if (!userEmail) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    // Find user by email in MongoDB
+    const user = await db.collection('users').findOne({ email: userEmail });
+
+    if (!user) {
+      // If user not found in database, return basic info from headers
+      return res.json({
+        id: 'unknown',
+        email: userEmail,
+        name: req.headers['x-forwarded-user'] || req.headers['x-auth-request-user'] || userEmail,
+        role: 'USER',
+      });
+    }
+
+    // Return user from database
+    res.json({
+      id: user._id.toString(),
+      _id: user._id.toString(),
+      username: user.username,
+      name: user.name,
+      email: user.email,
+      role: user.role || 'USER',
+      provider: user.provider,
+      avatar: user.avatar,
+    });
+  } catch (error) {
+    console.error('Error fetching current user:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Start server
 async function start() {
   await connectDB();
