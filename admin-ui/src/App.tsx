@@ -38,7 +38,6 @@ import TokenIcon from '@mui/icons-material/Token';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import FolderIcon from '@mui/icons-material/Folder';
 import AssessmentIcon from '@mui/icons-material/Assessment';
-import CloudIcon from '@mui/icons-material/Cloud';
 
 function App() {
   return (

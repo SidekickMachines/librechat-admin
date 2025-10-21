@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   useDataProvider,
   useNotify,
-  useRefresh,
   Loading,
   Title,
 } from 'react-admin';
@@ -57,7 +56,6 @@ interface CommandResult {
 export const ClusterManagement = () => {
   const dataProvider = useDataProvider();
   const notify = useNotify();
-  const refresh = useRefresh();
 
   const [deployments, setDeployments] = useState<Deployment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -116,7 +114,7 @@ export const ClusterManagement = () => {
         throw new Error('Failed to restart deployment');
       }
 
-      const result = await response.json();
+      await response.json();
       notify(`Deployment ${deploymentName} restarted successfully`, { type: 'success' });
 
       // Reload deployments after a short delay
