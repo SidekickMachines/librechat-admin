@@ -1607,27 +1607,22 @@ app.get('/api/kubectl/commands', async (req, res) => {
         {
           command: 'get',
           description: 'Display one or many resources',
-          examples: ['get pods', 'get deployments', 'get services']
+          examples: ['get pods', 'get deployments', 'get services', 'get pods <pod-name>']
         },
         {
           command: 'describe',
-          description: 'Show details of a specific resource or group of resources',
+          description: 'Show details of a specific resource',
           examples: ['describe pod <pod-name>', 'describe deployment <deployment-name>']
         },
         {
           command: 'logs',
           description: 'Print the logs for a container in a pod',
-          examples: ['logs <pod-name>', 'logs <pod-name> -c <container-name>']
-        },
-        {
-          command: 'top',
-          description: 'Display resource (CPU/Memory) usage',
-          examples: ['top pods', 'top nodes']
+          examples: ['logs <pod-name>']
         },
         {
           command: 'explain',
-          description: 'Get documentation for a resource',
-          examples: ['explain pod', 'explain deployment']
+          description: 'Get documentation for a resource type',
+          examples: ['explain pod', 'explain deployment', 'explain service']
         }
       ],
       namespaces: ['librechat', 'snow-mcp', 'default']

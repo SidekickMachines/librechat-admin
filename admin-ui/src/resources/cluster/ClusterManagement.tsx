@@ -286,7 +286,7 @@ export const ClusterManagement = () => {
           </Typography>
 
           <Alert severity="info" sx={{ mb: 3 }}>
-            Only read-only commands are allowed: <strong>get, describe, logs, top, explain</strong>
+            Only read-only commands are allowed: <strong>get, describe, logs, explain</strong>
           </Alert>
 
           {/* Command Reference */}

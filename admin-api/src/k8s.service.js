@@ -307,75 +307,280 @@ class KubernetesService {
   }
 
   /**
-   * Execute a kubectl command by running it in a pod
+   * Execute a kubectl-like command using Kubernetes API
    * @param {string} command - Command to execute
    * @param {Object} options - Execution options
    * @returns {Promise<Object>} Command execution result
    */
   async executeKubectlCommand(command, options = {}) {
     try {
-      const { namespace = 'default', allowedCommands = ['get', 'describe', 'logs', 'top'] } = options;
+      const { namespace = 'default', allowedCommands = ['get', 'describe', 'logs', 'top', 'explain'] } = options;
 
       // Parse and validate command
       const commandParts = command.trim().split(/\s+/);
       const mainCommand = commandParts[0];
+      const resourceType = commandParts[1];
+      const resourceName = commandParts[2];
 
       // Security: Only allow safe read-only commands
       if (!allowedCommands.includes(mainCommand)) {
         throw new Error(`Command '${mainCommand}' is not allowed. Allowed commands: ${allowedCommands.join(', ')}`);
       }
 
-      // Execute the command using kubectl wrapper
-      const result = await this.runKubectlCommand(commandParts, namespace);
+      // Execute the command using Kubernetes API
+      const result = await this.executeK8sCommand(mainCommand, resourceType, resourceName, namespace);
 
       return {
         command: command,
         namespace: namespace,
-        output: result.stdout,
-        error: result.stderr,
+        output: result.output,
+        error: result.error || '',
         exitCode: result.exitCode,
         timestamp: new Date().toISOString()
       };
     } catch (error) {
       console.error(`Error executing kubectl command '${command}':`, error.message);
+      return {
+        command: command,
+        namespace: namespace,
+        output: '',
+        error: error.message,
+        exitCode: 1,
+        timestamp: new Date().toISOString()
+      };
+    }
+  }
+
+  /**
+   * Execute Kubernetes API command
+   * @private
+   */
+  async executeK8sCommand(command, resourceType, resourceName, namespace) {
+    try {
+      switch (command) {
+        case 'get':
+          return await this.handleGetCommand(resourceType, resourceName, namespace);
+        case 'describe':
+          return await this.handleDescribeCommand(resourceType, resourceName, namespace);
+        case 'logs':
+          return await this.handleLogsCommand(resourceType, namespace);
+        case 'explain':
+          return await this.handleExplainCommand(resourceType);
+        default:
+          throw new Error(`Command '${command}' not implemented`);
+      }
+    } catch (error) {
       throw error;
     }
   }
 
   /**
-   * Run kubectl command using the Kubernetes API
+   * Handle 'get' command
    * @private
    */
-  async runKubectlCommand(commandParts, namespace) {
-    const { spawn } = require('child_process');
+  async handleGetCommand(resourceType, resourceName, namespace) {
+    try {
+      let output = '';
 
-    return new Promise((resolve, reject) => {
-      const args = ['--namespace', namespace, ...commandParts];
-      const kubectl = spawn('kubectl', args);
+      if (resourceType === 'pods') {
+        const response = await this.coreApi.listNamespacedPod(namespace);
+        const pods = response.body.items;
 
-      let stdout = '';
-      let stderr = '';
+        if (resourceName) {
+          const pod = pods.find(p => p.metadata.name === resourceName);
+          if (!pod) {
+            throw new Error(`Pod "${resourceName}" not found`);
+          }
+          output = JSON.stringify(pod, null, 2);
+        } else {
+          output = this.formatPodsTable(pods);
+        }
+      } else if (resourceType === 'deployments') {
+        const response = await this.appsApi.listNamespacedDeployment(namespace);
+        const deployments = response.body.items;
 
-      kubectl.stdout.on('data', (data) => {
-        stdout += data.toString();
-      });
+        if (resourceName) {
+          const deployment = deployments.find(d => d.metadata.name === resourceName);
+          if (!deployment) {
+            throw new Error(`Deployment "${resourceName}" not found`);
+          }
+          output = JSON.stringify(deployment, null, 2);
+        } else {
+          output = this.formatDeploymentsTable(deployments);
+        }
+      } else if (resourceType === 'services' || resourceType === 'svc') {
+        const response = await this.coreApi.listNamespacedService(namespace);
+        const services = response.body.items;
 
-      kubectl.stderr.on('data', (data) => {
-        stderr += data.toString();
-      });
+        if (resourceName) {
+          const service = services.find(s => s.metadata.name === resourceName);
+          if (!service) {
+            throw new Error(`Service "${resourceName}" not found`);
+          }
+          output = JSON.stringify(service, null, 2);
+        } else {
+          output = this.formatServicesTable(services);
+        }
+      } else {
+        throw new Error(`Resource type '${resourceType}' not supported. Try: pods, deployments, services`);
+      }
 
-      kubectl.on('close', (code) => {
-        resolve({
-          stdout: stdout,
-          stderr: stderr,
-          exitCode: code
-        });
-      });
+      return { output, exitCode: 0 };
+    } catch (error) {
+      throw error;
+    }
+  }
 
-      kubectl.on('error', (err) => {
-        reject(err);
-      });
+  /**
+   * Handle 'describe' command
+   * @private
+   */
+  async handleDescribeCommand(resourceType, resourceName, namespace) {
+    try {
+      if (!resourceName) {
+        throw new Error('Resource name is required for describe command');
+      }
+
+      let output = '';
+
+      if (resourceType === 'pod') {
+        const response = await this.coreApi.readNamespacedPod(resourceName, namespace);
+        output = this.formatPodDescription(response.body);
+      } else if (resourceType === 'deployment') {
+        const response = await this.appsApi.readNamespacedDeployment(resourceName, namespace);
+        output = this.formatDeploymentDescription(response.body);
+      } else {
+        throw new Error(`Resource type '${resourceType}' not supported for describe. Try: pod, deployment`);
+      }
+
+      return { output, exitCode: 0 };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Handle 'logs' command
+   * @private
+   */
+  async handleLogsCommand(podName, namespace) {
+    try {
+      if (!podName) {
+        throw new Error('Pod name is required for logs command');
+      }
+
+      const logs = await this.getPodLogs(namespace, podName, { tailLines: 100, timestamps: true });
+      return { output: logs, exitCode: 0 };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Handle 'explain' command
+   * @private
+   */
+  async handleExplainCommand(resourceType) {
+    const explanations = {
+      pod: 'Pod is the smallest deployable unit in Kubernetes. A Pod represents a single instance of a running process in your cluster.',
+      deployment: 'Deployment provides declarative updates for Pods and ReplicaSets. It manages the deployment and scaling of a set of Pods.',
+      service: 'Service is an abstraction which defines a logical set of Pods and a policy by which to access them.',
+      namespace: 'Namespace provides a mechanism for isolating groups of resources within a single cluster.',
+    };
+
+    const output = explanations[resourceType] || `No explanation available for '${resourceType}'. Try: pod, deployment, service, namespace`;
+    return { output, exitCode: 0 };
+  }
+
+  /**
+   * Format pods as table
+   * @private
+   */
+  formatPodsTable(pods) {
+    const header = 'NAME'.padEnd(50) + 'READY'.padEnd(10) + 'STATUS'.padEnd(15) + 'RESTARTS'.padEnd(10) + 'AGE';
+    const rows = pods.map(pod => {
+      const containerStatuses = pod.status.containerStatuses || [];
+      const ready = containerStatuses.filter(c => c.ready).length + '/' + containerStatuses.length;
+      const restarts = containerStatuses.reduce((sum, c) => sum + (c.restartCount || 0), 0);
+      const age = this.calculateAge(new Date(pod.metadata.creationTimestamp));
+
+      return pod.metadata.name.padEnd(50) +
+             ready.padEnd(10) +
+             pod.status.phase.padEnd(15) +
+             restarts.toString().padEnd(10) +
+             age;
     });
+
+    return header + '\n' + rows.join('\n');
+  }
+
+  /**
+   * Format deployments as table
+   * @private
+   */
+  formatDeploymentsTable(deployments) {
+    const header = 'NAME'.padEnd(40) + 'READY'.padEnd(10) + 'UP-TO-DATE'.padEnd(12) + 'AVAILABLE'.padEnd(12) + 'AGE';
+    const rows = deployments.map(deployment => {
+      const ready = (deployment.status.readyReplicas || 0) + '/' + (deployment.spec.replicas || 0);
+      const age = this.calculateAge(new Date(deployment.metadata.creationTimestamp));
+
+      return deployment.metadata.name.padEnd(40) +
+             ready.padEnd(10) +
+             (deployment.status.updatedReplicas || 0).toString().padEnd(12) +
+             (deployment.status.availableReplicas || 0).toString().padEnd(12) +
+             age;
+    });
+
+    return header + '\n' + rows.join('\n');
+  }
+
+  /**
+   * Format services as table
+   * @private
+   */
+  formatServicesTable(services) {
+    const header = 'NAME'.padEnd(40) + 'TYPE'.padEnd(20) + 'CLUSTER-IP'.padEnd(20) + 'PORT(S)';
+    const rows = services.map(service => {
+      const ports = (service.spec.ports || []).map(p => `${p.port}/${p.protocol}`).join(',');
+
+      return service.metadata.name.padEnd(40) +
+             service.spec.type.padEnd(20) +
+             (service.spec.clusterIP || 'None').padEnd(20) +
+             ports;
+    });
+
+    return header + '\n' + rows.join('\n');
+  }
+
+  /**
+   * Format pod description
+   * @private
+   */
+  formatPodDescription(pod) {
+    return `Name:         ${pod.metadata.name}
+Namespace:    ${pod.metadata.namespace}
+Status:       ${pod.status.phase}
+IP:           ${pod.status.podIP || 'N/A'}
+Node:         ${pod.spec.nodeName || 'N/A'}
+Start Time:   ${pod.metadata.creationTimestamp}
+Labels:       ${JSON.stringify(pod.metadata.labels || {}, null, 2)}
+Containers:   ${(pod.spec.containers || []).map(c => c.name).join(', ')}
+`;
+  }
+
+  /**
+   * Format deployment description
+   * @private
+   */
+  formatDeploymentDescription(deployment) {
+    return `Name:         ${deployment.metadata.name}
+Namespace:    ${deployment.metadata.namespace}
+Replicas:     ${deployment.spec.replicas} desired | ${deployment.status.updatedReplicas || 0} updated | ${deployment.status.availableReplicas || 0} available
+Strategy:     ${deployment.spec.strategy.type}
+Selector:     ${JSON.stringify(deployment.spec.selector.matchLabels || {}, null, 2)}
+Labels:       ${JSON.stringify(deployment.metadata.labels || {}, null, 2)}
+Containers:   ${(deployment.spec.template.spec.containers || []).map(c => `${c.name} (${c.image})`).join(', ')}
+`;
   }
 
   /**
