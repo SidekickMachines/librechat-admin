@@ -313,9 +313,9 @@ class KubernetesService {
    * @returns {Promise<Object>} Command execution result
    */
   async executeKubectlCommand(command, options = {}) {
-    try {
-      const { namespace = 'default', allowedCommands = ['get', 'describe', 'logs', 'top', 'explain'] } = options;
+    const { namespace = 'default', allowedCommands = ['get', 'describe', 'logs', 'top', 'explain'] } = options;
 
+    try {
       // Parse and validate command
       const commandParts = command.trim().split(/\s+/);
       const mainCommand = commandParts[0];
