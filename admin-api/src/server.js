@@ -1481,6 +1481,163 @@ app.get('/api/pods/:namespace/:podName/logs', async (req, res) => {
   }
 });
 
+// ==================== DEPLOYMENT MANAGEMENT ENDPOINTS ====================
+
+// GET /api/deployments - List all deployments across specified namespaces
+app.get('/api/deployments', async (req, res) => {
+  try {
+    const { namespaces } = req.query;
+    const namespacesArray = namespaces
+      ? namespaces.split(',')
+      : ['librechat', 'snow-mcp', 'default'];
+
+    const deployments = await k8sService.listDeployments(namespacesArray);
+
+    // Format for React-Admin
+    res.json({
+      data: deployments,
+      total: deployments.length,
+    });
+  } catch (error) {
+    console.error('Error listing deployments:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/deployments/:id - Get single deployment details
+app.get('/api/deployments/:id', async (req, res) => {
+  try {
+    // ID format: namespace::deploymentname
+    const parts = req.params.id.split('::');
+    if (parts.length !== 2) {
+      return res.status(400).json({ error: 'Invalid deployment ID format. Expected: namespace::deploymentname' });
+    }
+
+    const [namespace, deploymentName] = parts;
+
+    if (!namespace || !deploymentName) {
+      return res.status(400).json({ error: 'Invalid deployment ID format. Expected: namespace::deploymentname' });
+    }
+
+    const deployment = await k8sService.getDeployment(namespace, deploymentName);
+    res.json({
+      id: deployment.id,
+      ...deployment,
+    });
+  } catch (error) {
+    console.error('Error fetching deployment:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/deployments/:id/restart - Restart a deployment
+app.post('/api/deployments/:id/restart', async (req, res) => {
+  try {
+    // ID format: namespace::deploymentname
+    const parts = req.params.id.split('::');
+    if (parts.length !== 2) {
+      return res.status(400).json({ error: 'Invalid deployment ID format. Expected: namespace::deploymentname' });
+    }
+
+    const [namespace, deploymentName] = parts;
+
+    if (!namespace || !deploymentName) {
+      return res.status(400).json({ error: 'Invalid deployment ID format. Expected: namespace::deploymentname' });
+    }
+
+    console.log(`🔄 Restarting deployment ${namespace}/${deploymentName}...`);
+    const deployment = await k8sService.restartDeployment(namespace, deploymentName);
+
+    // Audit log
+    const { userEmail, userName } = getUserFromHeaders(req);
+    await createAuditLog('restart', 'deployments', deployment.id, userEmail, userName, {
+      namespace: namespace,
+      deploymentName: deploymentName,
+    }, req.ip);
+
+    res.json({
+      success: true,
+      message: `Deployment ${deploymentName} in namespace ${namespace} has been restarted`,
+      deployment: deployment,
+    });
+  } catch (error) {
+    console.error('Error restarting deployment:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==================== KUBECTL COMMAND EXECUTION ENDPOINTS ====================
+
+// POST /api/kubectl/execute - Execute a kubectl command
+app.post('/api/kubectl/execute', async (req, res) => {
+  try {
+    const { command, namespace = 'default' } = req.body;
+
+    if (!command) {
+      return res.status(400).json({ error: 'Command is required' });
+    }
+
+    console.log(`📟 Executing kubectl command: ${command} (namespace: ${namespace})`);
+
+    const result = await k8sService.executeKubectlCommand(command, {
+      namespace: namespace,
+      allowedCommands: ['get', 'describe', 'logs', 'top', 'explain']
+    });
+
+    // Audit log
+    const { userEmail, userName } = getUserFromHeaders(req);
+    await createAuditLog('execute', 'kubectl-commands', `${namespace}::${command}`, userEmail, userName, {
+      command: command,
+      namespace: namespace,
+      exitCode: result.exitCode,
+    }, req.ip);
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error executing kubectl command:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/kubectl/commands - Get list of allowed kubectl commands
+app.get('/api/kubectl/commands', async (req, res) => {
+  try {
+    res.json({
+      allowedCommands: [
+        {
+          command: 'get',
+          description: 'Display one or many resources',
+          examples: ['get pods', 'get deployments', 'get services']
+        },
+        {
+          command: 'describe',
+          description: 'Show details of a specific resource or group of resources',
+          examples: ['describe pod <pod-name>', 'describe deployment <deployment-name>']
+        },
+        {
+          command: 'logs',
+          description: 'Print the logs for a container in a pod',
+          examples: ['logs <pod-name>', 'logs <pod-name> -c <container-name>']
+        },
+        {
+          command: 'top',
+          description: 'Display resource (CPU/Memory) usage',
+          examples: ['top pods', 'top nodes']
+        },
+        {
+          command: 'explain',
+          description: 'Get documentation for a resource',
+          examples: ['explain pod', 'explain deployment']
+        }
+      ],
+      namespaces: ['librechat', 'snow-mcp', 'default']
+    });
+  } catch (error) {
+    console.error('Error fetching allowed commands:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Start server
 async function start() {
   await connectDB();

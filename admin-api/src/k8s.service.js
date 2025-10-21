@@ -20,6 +20,7 @@ class KubernetesService {
 
     this.coreApi = this.kc.makeApiClient(k8s.CoreV1Api);
     this.appsApi = this.kc.makeApiClient(k8s.AppsV1Api);
+    this.exec = new k8s.Exec(this.kc);
   }
 
   /**
@@ -215,6 +216,210 @@ class KubernetesService {
     if (hours > 0) return `${hours}h`;
     if (minutes > 0) return `${minutes}m`;
     return `${seconds}s`;
+  }
+
+  /**
+   * List all deployments across specified namespaces
+   * @param {string[]} namespaces - Array of namespace names to query
+   * @returns {Promise<Array>} Array of deployment objects
+   */
+  async listDeployments(namespaces = ['librechat', 'snow-mcp', 'default']) {
+    try {
+      const allDeployments = [];
+
+      for (const namespace of namespaces) {
+        try {
+          const response = await this.appsApi.listNamespacedDeployment(namespace);
+          const deployments = response.body.items.map(deployment => this.formatDeploymentInfo(deployment));
+          allDeployments.push(...deployments);
+        } catch (err) {
+          console.error(`Error listing deployments in namespace ${namespace}:`, err.message);
+          // Continue with other namespaces even if one fails
+        }
+      }
+
+      return allDeployments;
+    } catch (error) {
+      console.error('Error listing deployments:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get detailed information about a specific deployment
+   * @param {string} namespace - Namespace name
+   * @param {string} deploymentName - Deployment name
+   * @returns {Promise<Object>} Deployment details
+   */
+  async getDeployment(namespace, deploymentName) {
+    try {
+      const response = await this.appsApi.readNamespacedDeployment(deploymentName, namespace);
+      return this.formatDeploymentInfo(response.body);
+    } catch (error) {
+      console.error(`Error getting deployment ${namespace}/${deploymentName}:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Restart a deployment by updating its annotations
+   * @param {string} namespace - Namespace name
+   * @param {string} deploymentName - Deployment name
+   * @returns {Promise<Object>} Updated deployment info
+   */
+  async restartDeployment(namespace, deploymentName) {
+    try {
+      const now = new Date().toISOString();
+
+      // Patch the deployment to trigger a rollout restart
+      const patch = {
+        spec: {
+          template: {
+            metadata: {
+              annotations: {
+                'kubectl.kubernetes.io/restartedAt': now
+              }
+            }
+          }
+        }
+      };
+
+      const options = {
+        headers: { 'Content-Type': 'application/strategic-merge-patch+json' }
+      };
+
+      const response = await this.appsApi.patchNamespacedDeployment(
+        deploymentName,
+        namespace,
+        patch,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        options
+      );
+
+      return this.formatDeploymentInfo(response.body);
+    } catch (error) {
+      console.error(`Error restarting deployment ${namespace}/${deploymentName}:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Execute a kubectl command by running it in a pod
+   * @param {string} command - Command to execute
+   * @param {Object} options - Execution options
+   * @returns {Promise<Object>} Command execution result
+   */
+  async executeKubectlCommand(command, options = {}) {
+    try {
+      const { namespace = 'default', allowedCommands = ['get', 'describe', 'logs', 'top'] } = options;
+
+      // Parse and validate command
+      const commandParts = command.trim().split(/\s+/);
+      const mainCommand = commandParts[0];
+
+      // Security: Only allow safe read-only commands
+      if (!allowedCommands.includes(mainCommand)) {
+        throw new Error(`Command '${mainCommand}' is not allowed. Allowed commands: ${allowedCommands.join(', ')}`);
+      }
+
+      // Execute the command using kubectl wrapper
+      const result = await this.runKubectlCommand(commandParts, namespace);
+
+      return {
+        command: command,
+        namespace: namespace,
+        output: result.stdout,
+        error: result.stderr,
+        exitCode: result.exitCode,
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error(`Error executing kubectl command '${command}':`, error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Run kubectl command using the Kubernetes API
+   * @private
+   */
+  async runKubectlCommand(commandParts, namespace) {
+    const { spawn } = require('child_process');
+
+    return new Promise((resolve, reject) => {
+      const args = ['--namespace', namespace, ...commandParts];
+      const kubectl = spawn('kubectl', args);
+
+      let stdout = '';
+      let stderr = '';
+
+      kubectl.stdout.on('data', (data) => {
+        stdout += data.toString();
+      });
+
+      kubectl.stderr.on('data', (data) => {
+        stderr += data.toString();
+      });
+
+      kubectl.on('close', (code) => {
+        resolve({
+          stdout: stdout,
+          stderr: stderr,
+          exitCode: code
+        });
+      });
+
+      kubectl.on('error', (err) => {
+        reject(err);
+      });
+    });
+  }
+
+  /**
+   * Format deployment information for consistent API responses
+   * @private
+   */
+  formatDeploymentInfo(deployment) {
+    const status = deployment.status;
+    const spec = deployment.spec;
+
+    // Determine deployment status
+    let deploymentStatus = 'Unknown';
+    if (status.availableReplicas === spec.replicas) {
+      deploymentStatus = 'Ready';
+    } else if (status.availableReplicas > 0) {
+      deploymentStatus = 'Partial';
+    } else {
+      deploymentStatus = 'Not Ready';
+    }
+
+    // Calculate age
+    const createdAt = new Date(deployment.metadata.creationTimestamp);
+    const age = this.calculateAge(createdAt);
+
+    return {
+      id: `${deployment.metadata.namespace}::${deployment.metadata.name}`,
+      name: deployment.metadata.name,
+      namespace: deployment.metadata.namespace,
+      status: deploymentStatus,
+      replicas: `${status.readyReplicas || 0}/${spec.replicas || 0}`,
+      availableReplicas: status.availableReplicas || 0,
+      unavailableReplicas: status.unavailableReplicas || 0,
+      updatedReplicas: status.updatedReplicas || 0,
+      desiredReplicas: spec.replicas || 0,
+      age: age,
+      createdAt: createdAt.toISOString(),
+      images: spec.template.spec.containers.map(c => c.image),
+      containers: spec.template.spec.containers.map(c => ({
+        name: c.name,
+        image: c.image,
+      })),
+      labels: deployment.metadata.labels || {},
+      selector: spec.selector.matchLabels || {},
+    };
   }
 }
 

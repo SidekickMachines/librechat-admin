@@ -13,6 +13,7 @@ import TokenIcon from '@mui/icons-material/Token';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import AssessmentIcon from '@mui/icons-material/Assessment';
+import CloudIcon from '@mui/icons-material/Cloud';
 
 const MenuSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <Box sx={{ mb: 2 }}>
@@ -161,6 +162,11 @@ export const CustomMenu = () => {
       </MenuSection>
 
       <MenuSection title="Administration">
+        <MenuItemLink
+          to="/cluster"
+          primaryText="Cluster Management"
+          leftIcon={<CloudIcon />}
+        />
         {resources['audit-logs'] && (
           <MenuItemLink
             to="/audit-logs"

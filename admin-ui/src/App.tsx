@@ -25,6 +25,7 @@ import { TokenList } from './resources/tokens/TokenList';
 import { TransactionList } from './resources/transactions/TransactionList';
 import { ProjectList } from './resources/projects/ProjectList';
 import { AuditList } from './resources/audit/AuditList';
+import { ClusterManagement } from './resources/cluster/ClusterManagement';
 import PeopleIcon from '@mui/icons-material/People';
 import ChatIcon from '@mui/icons-material/Chat';
 import SecurityIcon from '@mui/icons-material/Security';
@@ -37,6 +38,7 @@ import TokenIcon from '@mui/icons-material/Token';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import FolderIcon from '@mui/icons-material/Folder';
 import AssessmentIcon from '@mui/icons-material/Assessment';
+import CloudIcon from '@mui/icons-material/Cloud';
 
 function App() {
   return (
@@ -127,8 +129,10 @@ function App() {
         icon={AssessmentIcon}
         options={{ label: 'Audit Logs' }}
       />
+      <Resource name="deployments" />
       <CustomRoutes>
         <Route path="/costs" element={<CostDashboard />} />
+        <Route path="/cluster" element={<ClusterManagement />} />
       </CustomRoutes>
     </Admin>
   );
